@@ -1,5 +1,5 @@
 {
-  "name": "movies-explorer-api",
+  "name": "coffee-api",
   "version": "1.0.0",
   "description": ":)",
   "main": "app.js",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sosalnet/movies-explorer-api"
+    "url": "git+https://github.com/timuritodev/coffee-api"
   },
   "author": "Timurito",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/sosalnet/movies-explorer-api/issues"
+    "url": "https://github.com/timuritodev/coffee-api/issues"
   },
-  "homepage": "https://github.com/sosalnet/movies-explorer-api#readme",
+  "homepage": "https://github.com/timuritodev/coffee-api-api#readme",
   "devDependencies": {
     "eslint": "^8.28.0",
     "eslint-config-airbnb-base": "^15.0.0",

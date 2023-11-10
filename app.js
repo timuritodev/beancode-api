@@ -9,6 +9,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const { login, createUser } = require('./controllers/users');
 const productRoutes = require('./routes/products');
+const userRoutes = require('./routes/users');
 // const auth = require('./middlewares/auth');
 const { celebrateCreateUser, celebrateLoginUser } = require('./validators/users');
 const NotFoundError = require('./errors/NotFoundError');
@@ -63,8 +64,8 @@ app.get('/crash-test', () => {
   }, 0);
 });
 
-app.post('/signin', celebrateLoginUser, login);
-app.post('/signup', celebrateCreateUser, createUser);
+// app.post('/signin', celebrateLoginUser, login);
+// app.post('/signup', celebrateCreateUser, createUser);
 
 // app.use('/products', require('./routes/products'));
 // app.use('/products/:id', require('./routes/products'));
@@ -72,7 +73,8 @@ app.post('/signup', celebrateCreateUser, createUser);
 app.use(productRoutes);
 
 // app.use(auth);
-app.use('/users', require('./routes/users'));
+// app.use('/users', require('./routes/users'));
+app.use(userRoutes);
 
 app.use((req, res, next) => next(new NotFoundError('Страница не найдена')));
 app.use(errorLogger);
