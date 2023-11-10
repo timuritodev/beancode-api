@@ -1,18 +1,18 @@
 const ServerError = require('../errors/ServerError');
-const { Items } = require('../models/item');
+const { Products } = require('../models/product');
 const NotFoundError = require('../errors/NotFoundError');
 
-module.exports.getItems = (req, res, next) => {
-    Items.find()
+module.exports.getProducts = (req, res, next) => {
+    Products.find()
     .then((cards) => {
       res.send(cards);
     })
     .catch((err) => next(new ServerError(err.message)));
 };
 
-module.exports.getItemsById = (req, res, next) => {
+module.exports.getProductsById = (req, res, next) => {
   const itemId = req.params.id;
-  Items.findOne({ id: itemId })
+  Products.findOne({ id: itemId })
     .then((item) => {
       if (!item) {
         throw new NotFoundError('Товар не найден');
