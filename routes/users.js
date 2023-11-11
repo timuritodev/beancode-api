@@ -6,8 +6,20 @@ const auth = require('../middlewares/auth');
 const router = express.Router();
 
 // Create a new user
+// Get all users
+router.get('/users', async (req, res, next) => {
+  try {
+    const users = await getAllUsers();
+    res.json({ users });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Create a new user
 router.post('/signup', celebrateCreateUser, async (req, res, next) => {
   try {
+    console.log('Received data:', req.body);
     const userId = await createUser(req.body);
     res.status(201).json({ userId });
   } catch (error) {
@@ -35,19 +47,9 @@ router.post('/signin', celebrateLoginUser, async (req, res, next) => {
   }
 });
 
-// Get all users
-router.get('/users', async (req, res, next) => {
-  try {
-    const users = await getAllUsers();
-    res.json({ users });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Update user profile
-router.patch('/me', celebrateEditUser, auth, async (req, res, next) => {
-  // Your update logic here
-});
+// // Update user profile
+// router.patch('/me', celebrateEditUser, auth, async (req, res, next) => {
+//   // Your update logic here
+// });
 
 module.exports = router;

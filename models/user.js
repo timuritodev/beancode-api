@@ -31,16 +31,51 @@ const userSchema = {
 };
 
 const createUser = async (userData) => {
-  const { name, surname, phone, email, address } = userData;
-  const hashedPassword = await bcrypt.hash(userData.password, 10);
+  const { name, surname, phone, email, address, password } = userData;
 
-  const [rows, fields] = await pool.execute(`
-    INSERT INTO user (name, surname, phone, email, address, password)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `, [name, surname, phone, email, address, hashedPassword]);
+  if (!name || !surname || !phone || !email || !address || !password) {
+    console.log("Invalid user data:", userData);
+    throw new Error("All user properties must be provided");
+  }
 
-  return rows.insertId;
+  try {
+    const [rows, fields] = await pool.execute(`
+      INSERT INTO user (name, surname, phone, email, address, password)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [name, surname, phone, email, address, password]);
+
+    return rows.insertId;
+  } catch (error) {
+    console.error("Error in createUser:", error);
+    throw error; // Rethrow the error to be caught by the calling function
+  }
 };
+
+
+// const createUser = async (userData) => {
+//   const { name, surname, phone, email, address, password } = userData;
+//   const hashedPassword = await bcrypt.hash(password, 10);
+
+//   console.log("Values before executing SQL:", [name, surname, phone, email, address, hashedPassword]);
+
+//   try {
+//     const [rows, fields] = await pool.execute(
+//       `
+//       INSERT INTO user (name, surname, phone, email, address, password)
+//       VALUES (?, ?, ?, ?, ?, ?)
+//       `,
+//       [name, surname, phone, email, address, hashedPassword]
+//     );
+
+//     console.log("Rows inserted:", rows);
+
+//     return rows.insertId;
+//   } catch (error) {
+//     console.error("Error in createUser:", error);
+//     throw error; // Rethrow the error to be caught by the calling function
+//   }
+// };
+
 
 const findUserByCredentials = async (email, password) => {
   const [rows, fields] = await pool.execute(`
