@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { emailRegex, pool } = require('../utils/utils');
+const jwt = require('jsonwebtoken');
 // const { ValidationError, ConflictError } = require('../errors');
 
 const userSchema = {
@@ -32,49 +33,24 @@ const userSchema = {
 
 const createUser = async (userData) => {
   const { name, surname, phone, email, address, password } = userData;
-
-  if (!name || !surname || !phone || !email || !address || !password) {
-    console.log("Invalid user data:", userData);
-    throw new Error("All user properties must be provided");
-  }
-
+  const hashedPassword = await bcrypt.hash(password, 10);
   try {
-    const [rows, fields] = await pool.execute(`
+    const [rows, fields] = await pool.execute(
+      `
       INSERT INTO user (name, surname, phone, email, address, password)
       VALUES (?, ?, ?, ?, ?, ?)
-    `, [name, surname, phone, email, address, password]);
+      `,
+      [name, surname, phone, email, address, hashedPassword]
+    );
+
+    console.log("Rows inserted:", rows);
 
     return rows.insertId;
   } catch (error) {
     console.error("Error in createUser:", error);
-    throw error; // Rethrow the error to be caught by the calling function
+    throw error;
   }
 };
-
-
-// const createUser = async (userData) => {
-//   const { name, surname, phone, email, address, password } = userData;
-//   const hashedPassword = await bcrypt.hash(password, 10);
-
-//   console.log("Values before executing SQL:", [name, surname, phone, email, address, hashedPassword]);
-
-//   try {
-//     const [rows, fields] = await pool.execute(
-//       `
-//       INSERT INTO user (name, surname, phone, email, address, password)
-//       VALUES (?, ?, ?, ?, ?, ?)
-//       `,
-//       [name, surname, phone, email, address, hashedPassword]
-//     );
-
-//     console.log("Rows inserted:", rows);
-
-//     return rows.insertId;
-//   } catch (error) {
-//     console.error("Error in createUser:", error);
-//     throw error; // Rethrow the error to be caught by the calling function
-//   }
-// };
 
 
 const findUserByCredentials = async (email, password) => {

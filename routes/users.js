@@ -2,6 +2,7 @@ const express = require('express');
 const { celebrateCreateUser, celebrateLoginUser, celebrateEditUser } = require('../validators/users');
 const { createUser, findUserByCredentials, getAllUsers } = require('../models/user'); // Assuming you have a getAllUsers function
 const auth = require('../middlewares/auth');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
@@ -16,10 +17,8 @@ router.get('/users', async (req, res, next) => {
   }
 });
 
-// Create a new user
 router.post('/signup', celebrateCreateUser, async (req, res, next) => {
   try {
-    console.log('Received data:', req.body);
     const userId = await createUser(req.body);
     res.status(201).json({ userId });
   } catch (error) {
@@ -27,7 +26,6 @@ router.post('/signup', celebrateCreateUser, async (req, res, next) => {
   }
 });
 
-// User login
 router.post('/signin', celebrateLoginUser, async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -38,7 +36,7 @@ router.post('/signin', celebrateLoginUser, async (req, res, next) => {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    const { JWT_SALT } = req.app.get('config');
+    const JWT_SALT = req.app.get('config').JWT_SALT;
     const token = jwt.sign({ _id: user.id }, JWT_SALT, { expiresIn: '7d' });
 
     res.json({ token });

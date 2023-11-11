@@ -5,6 +5,7 @@ const express = require('express');
 const helmet = require('helmet');
 const { errors } = require('celebrate');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const path = require('path');
 // const { login, createUser } = require('./controllers/users');
@@ -46,11 +47,15 @@ app.use((req, res, next) => {
   next();
 });
 
-const config = dotenv.config({
-  path: path
-    .resolve(process.env.NODE_ENV === 'production' ? '.env' : '.env.common'),
-})
-  .parsed;
+// const config = dotenv.config({
+//   path: path
+//     .resolve(process.env.NODE_ENV === 'production' ? '.env' : '.env.common'),
+// })
+//   .parsed;
+
+const config = {
+  JWT_SALT: process.env.JWT_SALT || 'your_default_salt_value',
+};
 
 app.set('config', config);
 app.use(requestLogger);
