@@ -1,6 +1,6 @@
 const express = require('express');
 const { celebrateCreateUser, celebrateLoginUser, celebrateEditUser } = require('../validators/users');
-const { createUser, findUserByCredentials, getAllUsers } = require('../models/user');
+const { createUser, findUserByCredentials, getAllUsers, updateUser } = require('../models/user');
 const auth = require('../middlewares/auth');
 const jwt = require('jsonwebtoken');
 
@@ -43,9 +43,17 @@ router.post('/signin', celebrateLoginUser, async (req, res, next) => {
   }
 });
 
-// // Update user profile
-// router.patch('/me', celebrateEditUser, auth, async (req, res, next) => {
-//   // Your update logic here
-// });
+router.patch('/users-me', celebrateEditUser, auth, async (req, res, next) => {
+  try {
+    const userId = req.user._id; // Assuming you have a middleware that sets the user ID in the request object during authentication
+    const updatedUserData = req.body;
+
+    await updateUser(userId, updatedUserData);
+
+    res.json({ message: 'User profile updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;

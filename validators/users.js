@@ -20,7 +20,11 @@ module.exports.celebrateLoginUser = celebrate({
 
 module.exports.celebrateEditUser = celebrate({
   body: Joi.object().keys({
-    email: Joi.string().email().required(),
-    name: Joi.string().min(2).max(30).required(),
+    name: Joi.string().optional(),
+    surname: Joi.string().optional(),
+    phone: Joi.string().optional(),
+    email: Joi.string().email().optional(),
+    address: Joi.string().optional(),
+    password: Joi.string().optional(),
   }),
 });
