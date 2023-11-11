@@ -5,7 +5,6 @@ const express = require('express');
 const helmet = require('helmet');
 const { errors } = require('celebrate');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const path = require('path');
 // const { login, createUser } = require('./controllers/users');

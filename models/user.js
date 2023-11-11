@@ -1,35 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { emailRegex, pool } = require('../utils/utils');
-const jwt = require('jsonwebtoken');
 // const { ValidationError, ConflictError } = require('../errors');
-
-const userSchema = {
-  name: {
-    type: 'VARCHAR(100)',
-    required: true,
-  },
-  surname: {
-    type: 'VARCHAR(100)',
-    required: true,
-  },
-  phone: {
-    type: 'VARCHAR(100)',
-    required: true,
-  },
-  email: {
-    type: 'VARCHAR(100)',
-    unique: true,
-    required: true,
-    validate: {
-      validator: (email) => emailRegex.test(email),
-      message: 'Enter a valid email',
-    },
-  },
-  address: {
-    type: 'VARCHAR(255)',
-    required: true,
-  },
-};
 
 const createUser = async (userData) => {
   const { name, surname, phone, email, address, password } = userData;

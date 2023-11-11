@@ -1,13 +1,11 @@
 const express = require('express');
 const { celebrateCreateUser, celebrateLoginUser, celebrateEditUser } = require('../validators/users');
-const { createUser, findUserByCredentials, getAllUsers } = require('../models/user'); // Assuming you have a getAllUsers function
+const { createUser, findUserByCredentials, getAllUsers } = require('../models/user');
 const auth = require('../middlewares/auth');
 const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-// Create a new user
-// Get all users
 router.get('/users', async (req, res, next) => {
   try {
     const users = await getAllUsers();
