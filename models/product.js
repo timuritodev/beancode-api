@@ -1,14 +1,15 @@
-const mysql = require('mysql2/promise');
+// const mysql = require('mysql2/promise');
+const { pool } = require('../utils/utils');
 
-const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'timur2003',
-  database: 'coffee',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+// const pool = mysql.createPool({
+//   host: 'localhost',
+//   user: 'root',
+//   password: 'timur2003',
+//   database: 'coffee',
+//   waitForConnections: true,
+//   connectionLimit: 10,
+//   queueLimit: 0,
+// });
 
 const getAllProducts = async () => {
   const [rows, fields] = await pool.execute('SELECT * FROM product');

@@ -1,17 +1,16 @@
 const bodyParser = require('body-parser');
 const express = require('express');
 // const mongoose = require('mongoose');
-const mysql = require('mysql2');
+// const mysql = require('mysql2');
 const helmet = require('helmet');
 const { errors } = require('celebrate');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
-const { login, createUser } = require('./controllers/users');
+// const { login, createUser } = require('./controllers/users');
 const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
-// const auth = require('./middlewares/auth');
-const { celebrateCreateUser, celebrateLoginUser } = require('./validators/users');
+// const { celebrateCreateUser, celebrateLoginUser } = require('./validators/users');
 const NotFoundError = require('./errors/NotFoundError');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
 const errorHandler = require('./middlewares/errorHandler');
@@ -21,17 +20,17 @@ const { PORT = 3001 } = process.env;
 
 const app = express();
 
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'timur2003',
-  database: 'coffee',
-});
+// const connection = mysql.createConnection({
+//   host: 'localhost',
+//   user: 'root',
+//   password: 'timur2003',
+//   database: 'coffee',
+// });
 
-connection.connect((err) => {
-  if (err) throw err;
-  console.log('Connected to the database');
-});
+// connection.connect((err) => {
+//   if (err) throw err;
+//   console.log('Connected to the database');
+// });
 
 app.use(bodyParser.json());
 
@@ -64,16 +63,8 @@ app.get('/crash-test', () => {
   }, 0);
 });
 
-// app.post('/signin', celebrateLoginUser, login);
-// app.post('/signup', celebrateCreateUser, createUser);
-
-// app.use('/products', require('./routes/products'));
-// app.use('/products/:id', require('./routes/products'));
-
 app.use(productRoutes);
 
-// app.use(auth);
-// app.use('/users', require('./routes/users'));
 app.use(userRoutes);
 
 app.use((req, res, next) => next(new NotFoundError('Страница не найдена')));

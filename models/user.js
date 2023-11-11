@@ -1,17 +1,6 @@
-const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
-const { emailRegex } = require('../utils/utils');
+const { emailRegex, pool } = require('../utils/utils');
 // const { ValidationError, ConflictError } = require('../errors');
-
-const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'timur2003',
-  database: 'coffee',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
 
 const userSchema = {
   name: {
