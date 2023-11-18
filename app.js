@@ -10,6 +10,7 @@ const path = require('path');
 // const { login, createUser } = require('./controllers/users');
 const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
+const mailerRoutes = require('./routes/mailers');
 // const { celebrateCreateUser, celebrateLoginUser } = require('./validators/users');
 const NotFoundError = require('./errors/NotFoundError');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
@@ -70,6 +71,8 @@ app.get('/crash-test', () => {
 app.use(productRoutes);
 
 app.use(userRoutes);
+
+app.use('/send-email', mailerRoutes);
 
 app.use((req, res, next) => next(new NotFoundError('Страница не найдена')));
 app.use(errorLogger);
