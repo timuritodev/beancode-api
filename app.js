@@ -21,18 +21,6 @@ const { PORT = 3001 } = process.env;
 
 const app = express();
 
-// const connection = mysql.createConnection({
-//   host: 'localhost',
-//   user: 'root',
-//   password: 'timur2003',
-//   database: 'coffee',
-// });
-
-// connection.connect((err) => {
-//   if (err) throw err;
-//   console.log('Connected to the database');
-// });
-
 app.use(bodyParser.json());
 
 app.use(cors(
@@ -72,7 +60,7 @@ app.use(productRoutes);
 
 app.use(userRoutes);
 
-app.use('/send-email', mailerRoutes);
+app.use(mailerRoutes);
 
 app.use((req, res, next) => next(new NotFoundError('Страница не найдена')));
 app.use(errorLogger);

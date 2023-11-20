@@ -1,13 +1,11 @@
 require('dotenv').config();
+// mailer.js
 const nodemailer = require('nodemailer');
 
-const sendEmail = async (req, res, next) => {
+const sendEmail = async ({ from, subject, text }) => {
   try {
-    const { from, subject, text } = req.body;
-
     // Создание транспорта для отправки писем
     const transporter = nodemailer.createTransport({
-      // host: '31.31.196.190',
       host: process.env.HOST,
       port: 587,
       secure: false,
@@ -21,14 +19,15 @@ const sendEmail = async (req, res, next) => {
     transporter.verify(function (error, success) {
       if (error) {
         console.error('Ошибка проверки подключения: ', error);
-        res.status(500).json({ success: false, message: 'Ошибка при проверке подключения' });
+        // Вызываем ошибку, чтобы ее обработать в блоке catch
+        throw new Error('Ошибка при проверке подключения');
       } else {
         console.log('Соединение установлено успешно');
 
         // Настройка письма
         const mailOptions = {
           from: from,
-          to: 'your_email@example.com',
+          to: process.env.MAIL,
           subject: subject,
           text: text,
         };
@@ -37,17 +36,18 @@ const sendEmail = async (req, res, next) => {
         transporter.sendMail(mailOptions, function (error, info) {
           if (error) {
             console.error('Ошибка отправки письма: ', error);
-            res.status(500).json({ success: false, message: 'Произошла ошибка при отправке письма' });
+            // Вызываем ошибку, чтобы ее обработать в блоке catch
+            throw new Error('Произошла ошибка при отправке письма');
           } else {
             console.log('Письмо отправлено: ', info.messageId);
-            res.json({ success: true, message: 'Письмо успешно отправлено' });
           }
         });
       }
     });
   } catch (error) {
     console.error('Общая ошибка: ', error);
-    res.status(500).json({ success: false, message: 'Произошла общая ошибка' });
+    // Вызываем ошибку, чтобы ее обработать в блоке catch
+    throw new Error('Произошла общая ошибка');
   }
 };
 
