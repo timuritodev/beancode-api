@@ -124,9 +124,25 @@ const getAllUsers = async () => {
   return rows;
 };
 
+const findUserById = async (userId) => {
+  const [rows, fields] = await pool.execute(`
+    SELECT * FROM user
+    WHERE id = ? 
+  `, [userId]);
+
+  if (!rows || rows.length === 0) {
+    return null;
+  }
+
+  const user = rows[0];
+  delete user.password;
+  return user;
+};
+
 module.exports = {
   createUser,
   findUserByCredentials,
   updateUser,
   getAllUsers,
+  findUserById
 };

@@ -1,9 +1,11 @@
+// auth.js
 const jwt = require('jsonwebtoken');
-const { UnauthorizedError } = require('../errors/UnauthorizedError');
+const { UnauthorizedError } = require('../errors/UnauthorizedError'); // Correct the import path
 
 module.exports = async (req, res, next) => {
   const { authorization } = req.headers;
 
+  // Check if the Authorization header is missing or doesn't start with 'Bearer '
   if (!authorization || !authorization.startsWith('Bearer ')) {
     return next(new UnauthorizedError('Authorization token is missing or malformed'));
   }
