@@ -21,7 +21,45 @@ const getProductById = async (productId) => {
   return rows[0]; // Assuming that the ID is unique; return the first result
 };
 
+const addToCart = async (userId, productId) => {
+  try {
+    // Проверяем существование пользователя в таблице cart
+    const userInCart = await pool.execute('SELECT * FROM cart WHERE user_id = ?', [userId]);
+
+    if (userInCart[0].length === 0) {
+      // Если пользователя нет в корзине, создаем новую корзину
+      const createCartResult = await pool.execute('INSERT INTO cart (user_id) VALUES (?)', [userId]);
+
+      if (createCartResult[0].affectedRows > 0) {
+        // Получаем id новой корзины
+        const newCartId = createCartResult[0].insertId;
+
+        // Вставляем товар в корзину
+        const insertProductResult = await pool.execute('INSERT INTO cart_product (cart_id, product_id) VALUES (?, ?)', [newCartId, productId]);
+
+        if (insertProductResult[0].affectedRows > 0) {
+          return { success: true };
+        }
+      }
+      return { success: false, error: 'Failed to add product to cart' };
+    }
+
+    // Вставляем товар в существующую корзину
+    const result = await pool.execute('INSERT INTO cart_product (cart_id, product_id) VALUES (?, ?)', [userInCart[0][0].id, productId]);
+
+    if (result[0].affectedRows > 0) {
+      return { success: true };
+    } else {
+      return { success: false, error: 'Failed to add product to cart' };
+    }
+  } catch (error) {
+    console.error('Error adding product to cart:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
+  addToCart
 };
