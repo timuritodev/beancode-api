@@ -72,7 +72,6 @@ const addToCart = async (userId, productId) => {
     throw error;
   }
 };
-
 const removeFromCart = async (userId, productId) => {
   try {
     // Check if the user has a cart
@@ -85,9 +84,9 @@ const removeFromCart = async (userId, productId) => {
       return { success: false, error: "User does not have a cart" };
     }
 
-    // Remove the product from the cart
+    // Remove one instance of the product from the cart
     const result = await pool.execute(
-      "DELETE FROM cart_product WHERE cart_id = ? AND product_id = ?",
+      "DELETE FROM cart_product WHERE cart_id = ? AND product_id = ? LIMIT 1",
       [userInCart[0][0].id, productId]
     );
 
@@ -101,6 +100,7 @@ const removeFromCart = async (userId, productId) => {
     throw error;
   }
 };
+
 
 module.exports = {
   getAllProducts,
