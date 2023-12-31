@@ -50,4 +50,21 @@ router.post('/cart/add', async (req, res) => {
   }
 });
 
+router.post('/cart/remove', async (req, res) => {
+  const { userId, productId } = req.body;
+
+  try {
+    const result = await productModel.removeFromCart(userId, productId);
+
+    if (result.success) {
+      res.json({productId});
+    } else {
+      res.status(400).json({ error: result.error || 'Failed to remove product from cart' });
+    }
+  } catch (error) {
+    console.error('Error removing product from cart:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;
