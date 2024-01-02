@@ -67,4 +67,21 @@ router.post('/cart/remove', async (req, res) => {
   }
 });
 
+router.delete('/cart/:userId', async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const result = await productModel.deleteProductsByUserId(userId);
+
+    if (result.success) {
+      res.json({ message: 'Products deleted successfully' });
+    } else {
+      res.status(400).json({ error: result.error || 'Failed to delete products' });
+    }
+  } catch (error) {
+    console.error('Error deleting products:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;

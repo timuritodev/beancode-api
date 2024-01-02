@@ -101,10 +101,39 @@ const removeFromCart = async (userId, productId) => {
   }
 };
 
+const deleteProductsByUserId = async (userId) => {
+  try {
+    // Check if the user has a cart
+    const userInCart = await pool.execute(
+      "SELECT * FROM cart WHERE user_id = ?",
+      [userId]
+    );
+
+    if (userInCart[0].length === 0) {
+      return { success: false, error: "User does not have a cart" };
+    }
+
+    // Delete all products associated with the user's cart
+    const result = await pool.execute(
+      "DELETE FROM cart_product WHERE cart_id = ?",
+      [userInCart[0][0].id]
+    );
+
+    if (result[0].affectedRows > 0) {
+      return { success: true };
+    } else {
+      return { success: false, error: "Failed to delete products" };
+    }
+  } catch (error) {
+    console.error("Error deleting products:", error);
+    throw error;
+  }
+};
 
 module.exports = {
   getAllProducts,
   getProductById,
   addToCart,
-  removeFromCart, // Add this line
+  removeFromCart,
+  deleteProductsByUserId
 };
