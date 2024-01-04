@@ -49,8 +49,9 @@ router.patch('/users-me', celebrateEditUser, auth, async (req, res, next) => {
     const updatedUserData = req.body;
 
     await updateUser(userId, updatedUserData);
+    const user = await findUserById(userId);
 
-    res.json({ message: 'User profile updated successfully' });
+    res.json({ user });
   } catch (error) {
     next(error);
   }
