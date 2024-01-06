@@ -32,11 +32,11 @@ router.get('/products/:id', async (req, res) => {
 });
 
 router.post('/cart/add', async (req, res) => {
-  const { userId, productId } = req.body;
+  const { userId, productId, product_price, product_weight } = req.body;
   const product = await productModel.getProductById(productId);
   try {
     // Вызываем метод модели корзины для добавления товара
-    const result = await productModel.addToCart(userId, productId);
+    const result = await productModel.addToCart(userId, productId, product_price, product_weight);
 
     if (result.success) {
       res.json({ product });

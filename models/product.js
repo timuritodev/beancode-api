@@ -24,14 +24,14 @@ const getProductById = async (productId) => {
   return rows[0]; // Assuming that the ID is unique; return the first result
 };
 
-const addToCart = async (userId, productId) => {
+const addToCart = async (userId, productId, product_price, product_weight) => {
   try {
     // Проверяем существование пользователя в таблице cart
     const userInCart = await pool.execute(
       "SELECT * FROM cart WHERE user_id = ?",
       [userId]
     );
-
+    
     if (userInCart[0].length === 0) {
       // Если пользователя нет в корзине, создаем новую корзину
       const createCartResult = await pool.execute(
@@ -45,8 +45,8 @@ const addToCart = async (userId, productId) => {
 
         // Вставляем товар в корзину
         const insertProductResult = await pool.execute(
-          "INSERT INTO cart_product (cart_id, product_id) VALUES (?, ?)",
-          [newCartId, productId]
+          "INSERT INTO cart_product (cart_id, product_id, product_price, product_weight) VALUES (?, ?, ?, ?)",
+          [newCartId, productId, product_price, product_weight]
         );
 
         if (insertProductResult[0].affectedRows > 0) {
@@ -58,8 +58,8 @@ const addToCart = async (userId, productId) => {
 
     // Вставляем товар в существующую корзину
     const result = await pool.execute(
-      "INSERT INTO cart_product (cart_id, product_id) VALUES (?, ?)",
-      [userInCart[0][0].id, productId]
+      "INSERT INTO cart_product (cart_id, product_id, product_price, product_weight) VALUES (?, ?, ?, ?)",
+      [userInCart[0][0].id, productId, product_price, product_weight]
     );
 
     if (result[0].affectedRows > 0) {
@@ -135,5 +135,5 @@ module.exports = {
   getProductById,
   addToCart,
   removeFromCart,
-  deleteProductsByUserId
+  deleteProductsByUserId,
 };
