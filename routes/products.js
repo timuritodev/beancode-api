@@ -71,13 +71,22 @@ router.post("/cart/add", async (req, res) => {
 });
 
 router.post("/cart/remove", async (req, res) => {
-  const { userId, productId } = req.body;
+  const { userId, productId, product_price, product_weight } = req.body;
 
   try {
-    const result = await productModel.removeFromCart(userId, productId);
+    const result = await productModel.removeFromCart(
+      userId,
+      productId,
+      product_price,
+      product_weight
+    );
 
     if (result.success) {
-      res.json({ productId });
+      // res.json({ productId });
+      res.json({
+        id: productId,
+        price: product_price,
+      });
     } else {
       res
         .status(400)

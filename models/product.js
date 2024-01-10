@@ -31,7 +31,7 @@ const addToCart = async (userId, productId, product_price, product_weight) => {
       "SELECT * FROM cart WHERE user_id = ?",
       [userId]
     );
-    
+
     if (userInCart[0].length === 0) {
       // Если пользователя нет в корзине, создаем новую корзину
       const createCartResult = await pool.execute(
@@ -72,7 +72,7 @@ const addToCart = async (userId, productId, product_price, product_weight) => {
     throw error;
   }
 };
-const removeFromCart = async (userId, productId) => {
+const removeFromCart = async (userId, productId, product_price, product_weight) => {
   try {
     // Check if the user has a cart
     const userInCart = await pool.execute(
@@ -86,8 +86,8 @@ const removeFromCart = async (userId, productId) => {
 
     // Remove one instance of the product from the cart
     const result = await pool.execute(
-      "DELETE FROM cart_product WHERE cart_id = ? AND product_id = ? LIMIT 1",
-      [userInCart[0][0].id, productId]
+      "DELETE FROM cart_product WHERE cart_id = ? AND product_id = ? AND product_price = ? AND product_weight = ? LIMIT 1",
+      [userInCart[0][0].id, productId, product_price, product_weight]
     );
 
     if (result[0].affectedRows > 0) {
