@@ -3,15 +3,15 @@ const { emailRegex, pool } = require('../utils/utils');
 // const { ValidationError, ConflictError } = require('../errors');
 
 const createUser = async (userData) => {
-  const { name, surname, phone, email, address, password } = userData;
+  const { name, surname, phone, email, address, password, city, area } = userData;
   const hashedPassword = await bcrypt.hash(password, 10);
   try {
     const [rows, fields] = await pool.execute(
       `
-      INSERT INTO user (name, surname, phone, email, address, password)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO user (name, surname, phone, email, address, password, city, area)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      [name, surname, phone, email, address, hashedPassword]
+      [name, surname, phone, email, address, hashedPassword, city, area]
     );
 
     console.log("Rows inserted:", rows);

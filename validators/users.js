@@ -8,6 +8,8 @@ module.exports.celebrateCreateUser = celebrate({
     email: Joi.string().email().required(),
     address: Joi.string().required(),
     password: Joi.string().required(),
+    city: Joi.string().required(),
+    area: Joi.string().allow(''),
   }),
 });
 
@@ -26,5 +28,7 @@ module.exports.celebrateEditUser = celebrate({
     email: Joi.string().email().optional(),
     address: Joi.string().optional(),
     password: Joi.string().optional(),
+    city: Joi.string().optional(),
+    area: Joi.string().optional(),
   }),
 });
