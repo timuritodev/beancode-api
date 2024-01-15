@@ -13,32 +13,12 @@ const router = express.Router();
 // });
 
 router.post("/create/order", async (req, res) => {
-  const {
-    userId,
-    phone,
-    email,
-    address,
-    city,
-    sum,
-    product_ids,
-    product_titles,
-    product_quantity,
-  } = req.body;
+  const orderData = req.body;
   try {
-    const result = await orderModel.createOrder(
-      userId,
-      phone,
-      email,
-      address,
-      city,
-      sum,
-      product_ids,
-      product_titles,
-      product_quantity
-    );
+    const orderId = await orderModel.createOrder(orderData);
 
-    if (result.success) {
-      res.status(201).json({ message: "Created order successfully" });
+    if (orderId) {
+      res.status(201).json({ orderId });
     } else {
       res.status(400).json({ error: "Failed to create order" });
     }
