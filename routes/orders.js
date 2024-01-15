@@ -3,15 +3,6 @@ const orderModel = require("../models/order");
 
 const router = express.Router();
 
-// router.post("/create/order", async (req, res, next) => {
-//   try {
-//     const userId = await orderModel.createOrder(req.body);
-//     res.status(201).json({ userId });
-//   } catch (error) {
-//     next(error);
-//   }
-// });
-
 router.post("/create/order", async (req, res) => {
   const orderData = req.body;
   try {
