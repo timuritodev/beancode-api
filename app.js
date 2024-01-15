@@ -11,6 +11,7 @@ const path = require('path');
 const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
 const mailerRoutes = require('./routes/mailers');
+const orderRoutes = require('./routes/orders');
 // const { celebrateCreateUser, celebrateLoginUser } = require('./validators/users');
 const NotFoundError = require('./errors/NotFoundError');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
@@ -61,6 +62,8 @@ app.use(productRoutes);
 app.use(userRoutes);
 
 app.use(mailerRoutes);
+
+app.use(orderRoutes);
 
 app.use((req, res, next) => next(new NotFoundError('Страница не найдена')));
 app.use(errorLogger);

@@ -29,6 +29,6 @@ module.exports.celebrateEditUser = celebrate({
     address: Joi.string().optional(),
     password: Joi.string().optional(),
     city: Joi.string().optional(),
-    area: Joi.string().optional(),
+    area: Joi.string().allow(''),
   }),
 });
