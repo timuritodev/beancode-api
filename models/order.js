@@ -44,7 +44,16 @@ const getAllOrders = async () => {
   return rows;
 };
 
+const getOrdersByUserId = async (userId) => {
+  const [rows, fields] = await pool.execute(
+    "SELECT * FROM orders WHERE user_id = ?",
+    [userId]
+  );
+  return rows[0];
+};
+
 module.exports = {
   getAllOrders,
   createOrder,
+  getOrdersByUserId,
 };
