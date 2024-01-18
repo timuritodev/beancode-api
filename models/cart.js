@@ -126,13 +126,23 @@ const getCartByUserId = async (userId) => {
 
   const cartId = cartRows[0].cart_id;
 
-  // Используем найденный cart_id для выбора товаров из cart_product
+  // Используем найденный cart_id для выбора всех товаров из cart_product
   const [productRows, productFields] = await pool.execute(
-    "SELECT * FROM cart_product WHERE cart_id = ?",
+    "SELECT cp.id, cp.cart_id, cp.product_id, cp.product_price, cp.product_weight, p.title, p.v_picture, p.h_picture FROM cart_product cp JOIN product p ON cp.product_id = p.id WHERE cp.cart_id = ?",
     [cartId]
   );
 
-  return productRows;
+  // Маппинг на новую структуру с использованием id вместо product_id
+  const mappedResult = productRows.map((row) => ({
+    id: row.product_id,
+    title: row.title,
+    price: row.product_price,
+    weight: row.product_weight,
+    v_picture: row.v_picture,
+    h_picture: row.h_picture,
+  }));
+
+  return mappedResult;
 };
 
 module.exports = {

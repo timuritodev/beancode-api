@@ -9,22 +9,12 @@ router.get("/cart/:id", async (req, res) => {
 
   try {
     const cart = await cartModel.getCartByUserId(userId);
-    console.log(cart)
-    const product = await productModel.getProductById(cart.product_id)
     if (!cart) {
       res.status(404).json({ error: "Cart not found" });
       return;
     }
 
-    // res.json(cart);
-    res.json({
-      id: product.id,
-      title: product.title,
-      price: product_price,
-      weight: product_weight,
-      v_picture: product.v_picture,
-      h_picture: product.h_picture,
-    });
+    res.json(cart);
   } catch (error) {
     console.error("Error fetching cart by ID:", 222, error);
     res.status(500).json({ error: "Internal Server Error" });
