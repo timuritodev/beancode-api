@@ -49,7 +49,7 @@ const getOrdersByUserId = async (userId) => {
     "SELECT * FROM orders WHERE user_id = ?",
     [userId]
   );
-  return rows[0];
+  return rows;
 };
 
 module.exports = {

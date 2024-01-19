@@ -29,7 +29,6 @@ router.get("/order/:id", async (req, res) => {
       res.status(404).json({ error: "Order not found" });
       return;
     }
-
     res.json(order);
   } catch (error) {
     console.error("Error fetching order by ID:", error);
