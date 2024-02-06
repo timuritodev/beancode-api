@@ -45,7 +45,7 @@ app.use((req, res, next) => {
 //   .parsed;
 
 const config = {
-  JWT_SALT: process.env.JWT_SALT || "your_default_salt_value",
+  JWT_SALT: process.env.JWT_SALT
 };
 
 app.set("config", config);

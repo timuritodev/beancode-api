@@ -8,12 +8,13 @@ const allowedCors = [
   'https://my-domain.com',
   'http://my-domain.com',
   'localhost:3000',
+  'http://beancode.ru',
 ];
 
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: 'timur2003',
+  password: '',
   database: 'coffee',
   waitForConnections: true,
   connectionLimit: 10,
