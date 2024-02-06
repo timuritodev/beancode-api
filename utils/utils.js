@@ -12,7 +12,7 @@ const allowedCors = [
 ];
 
 const pool = mysql.createPool({
-  host: 'localhost',
+  host: '127.0.0.1',
   user: 'root',
   password: 'timur2003',
   database: 'coffee',
