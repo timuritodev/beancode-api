@@ -14,7 +14,7 @@ const allowedCors = [
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: null,
+  password: 'timur2003',
   database: 'coffee',
   waitForConnections: true,
   connectionLimit: 10,
