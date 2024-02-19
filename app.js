@@ -19,6 +19,8 @@ const NotFoundError = require("./errors/NotFoundError");
 const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/errorHandler");
 const rateLimiter = require("./middlewares/rateLimit");
+const { createProxyMiddleware } = require("http-proxy-middleware");
+// const httpProxy = require("express-http-proxy");
 
 const { PORT = 3001 } = process.env;
 
@@ -45,7 +47,7 @@ app.use(
 //   .parsed;
 
 const config = {
-  JWT_SALT: process.env.JWT_SALT
+  JWT_SALT: process.env.JWT_SALT,
 };
 
 app.set("config", config);
@@ -58,6 +60,19 @@ app.get("/crash-test", () => {
     throw new Error("Сервер сейчас упадёт");
   }, 0);
 });
+
+const proxyOptions = {
+  // target: 'https://payment.alfabank.ru/payment/rest/register.do',
+  target: 'https://alfa.rbsuat.com/payment/rest/register.do',
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api-pay': '',
+  },
+};
+
+const apiProxy = createProxyMiddleware('/api-pay', proxyOptions);
+
+app.use('/api-pay', apiProxy);
 
 app.use(productRoutes);
 
