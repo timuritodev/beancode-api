@@ -20,7 +20,6 @@ const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/errorHandler");
 const rateLimiter = require("./middlewares/rateLimit");
 const { createProxyMiddleware } = require("http-proxy-middleware");
-// const httpProxy = require("express-http-proxy");
 
 const { PORT = 3001 } = process.env;
 
