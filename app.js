@@ -29,15 +29,15 @@ app.use(bodyParser.json());
 
 app.use(
   cors({
-    origin: "*",
+    origin: "https://beancode.ru",
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-app.use((req, res, next) => {
-  res.header({ "Access-Control-Allow-Origin": "*" });
-  next();
-});
+// app.use((req, res, next) => {
+//   res.header({ "Access-Control-Allow-Origin": "*" });
+//   next();
+// });
 
 // const config = dotenv.config({
 //   path: path
