@@ -29,7 +29,7 @@ app.use(bodyParser.json());
 
 app.use(
   cors({
-    origin: "https://beancode.ru",
+    origin: "*",
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -60,18 +60,31 @@ app.get("/crash-test", () => {
   }, 0);
 });
 
-const proxyOptions = {
-  // target: 'https://payment.alfabank.ru/payment/rest/register.do',
-  target: 'https://alfa.rbsuat.com/payment/rest/register.do',
+const proxyOptionsDeliver = {
+  target: "https://api.edu.cdek.ru/v2/orders",
+  // target: 'https://api.cdek.ru/v2/orders',
   changeOrigin: true,
   pathRewrite: {
-    '^/api-pay': '',
+    "^/api-deliver": "", // You can modify this if needed
   },
 };
 
-const apiProxy = createProxyMiddleware('/api-pay', proxyOptions);
+const apiProxyOther = createProxyMiddleware("/api-other", proxyOptionsDeliver);
 
-app.use('/api-pay', apiProxy);
+const proxyOptionsPay = {
+  // target: 'https://payment.alfabank.ru/payment/rest/register.do',
+  target: "https://alfa.rbsuat.com/payment/rest/register.do",
+  changeOrigin: true,
+  pathRewrite: {
+    "^/api-pay": "",
+  },
+};
+
+const apiProxy = createProxyMiddleware("/api-pay", proxyOptionsPay);
+
+app.use("/api-deliver", apiProxyOther);
+
+app.use("/api-pay", apiProxy);
 
 app.use(productRoutes);
 
