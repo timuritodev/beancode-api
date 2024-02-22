@@ -20,6 +20,7 @@ const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/errorHandler");
 const rateLimiter = require("./middlewares/rateLimit");
 const { createProxyMiddleware } = require("http-proxy-middleware");
+const fs = require('fs');
 
 const { PORT = 3001 } = process.env;
 
@@ -72,8 +73,8 @@ const proxyOptionsDeliver = {
 const apiProxyOther = createProxyMiddleware("/api-other", proxyOptionsDeliver);
 
 const proxyOptionsPay = {
-  // target: 'https://payment.alfabank.ru/payment/rest/register.do',
-  target: "https://alfa.rbsuat.com/payment/rest/register.do",
+  target: 'https://payment.alfabank.ru/payment/rest/register.do',
+  // target: "https://alfa.rbsuat.com/payment/rest/register.do",
   changeOrigin: true,
   pathRewrite: {
     "^/api-pay": "",
@@ -97,6 +98,25 @@ app.use(orderRoutes);
 app.use(cartRoutes);
 
 app.use(subcriptionRoutes);
+
+app.use("/service.php", (req, res) => {
+  const filePath = path.join(__dirname, "service.php");
+
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Internal Server Error');
+    }
+
+    res.set('Content-Type', 'text/plain');
+    res.send(data);
+  });
+});
+
+// app.use("/service.php", (req, res) => {
+//   // Ваша логика обработки запросов к service.php
+//   res.sendFile(path.join(__dirname, "service.php"));
+// });
 
 app.use((req, res, next) => next(new NotFoundError("Страница не найдена")));
 app.use(errorLogger);
