@@ -18,7 +18,12 @@ router.get('/users', async (req, res, next) => {
 router.post('/signup', celebrateCreateUser, async (req, res, next) => {
   try {
     const userId = await createUser(req.body);
-    res.status(201).json({ userId });
+
+    // After creating the user, issue a token
+    const JWT_SALT = req.app.get('config').JWT_SALT;
+    const token = jwt.sign({ _id: userId }, JWT_SALT, { expiresIn: '7d' });
+
+    res.status(201).json({ token });
   } catch (error) {
     next(error);
   }
