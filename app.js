@@ -72,6 +72,16 @@ const proxyOptionsDeliver = {
 
 const apiProxyOther = createProxyMiddleware("/api-other", proxyOptionsDeliver);
 
+const proxyOptionsStatus = {
+  target: 'https://payment.alfabank.ru/payment/rest/getOrderStatus.do',
+  changeOrigin: true,
+  pathRewrite: {
+    "^/api-status": "",
+  },
+};
+
+const apiProxyStatus = createProxyMiddleware("/api-status", proxyOptionsStatus)
+
 const proxyOptionsPay = {
   target: 'https://payment.alfabank.ru/payment/rest/register.do',
   // target: "https://alfa.rbsuat.com/payment/rest/register.do",
@@ -84,6 +94,8 @@ const proxyOptionsPay = {
 const apiProxy = createProxyMiddleware("/api-pay", proxyOptionsPay);
 
 app.use("/api-deliver", apiProxyOther);
+
+app.use("/api-status", apiProxyStatus);
 
 app.use("/api-pay", apiProxy);
 
