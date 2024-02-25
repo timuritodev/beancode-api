@@ -17,9 +17,14 @@ router.get('/users', async (req, res, next) => {
 
 router.post('/signup', celebrateCreateUser, async (req, res, next) => {
   try {
+
+    const existingUser = await findUserByEmail(req.body.email);
+    if (existingUser) {
+      throw new Error('Email is already registered');
+    }
+
     const userId = await createUser(req.body);
 
-    // After creating the user, issue a token
     const JWT_SALT = req.app.get('config').JWT_SALT;
     const token = jwt.sign({ _id: userId }, JWT_SALT, { expiresIn: '7d' });
 
@@ -36,7 +41,7 @@ router.post('/signin', celebrateLoginUser, async (req, res, next) => {
     const user = await findUserByCredentials(email, password);
 
     if (!user) {
-      throw new UnauthorizedError('Invalid email or password');
+      throw new Error('Invalid email or password');
     }
 
     const JWT_SALT = req.app.get('config').JWT_SALT;
@@ -50,7 +55,7 @@ router.post('/signin', celebrateLoginUser, async (req, res, next) => {
 
 router.patch('/users-me', celebrateEditUser, auth, async (req, res, next) => {
   try {
-    const userId = req.user._id; // Assuming you have a middleware that sets the user ID in the request object during authentication
+    const userId = req.user._id; 
     const updatedUserData = req.body;
 
     await updateUser(userId, updatedUserData);
