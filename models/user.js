@@ -23,6 +23,14 @@ const createUser = async (userData) => {
   }
 };
 
+const findUserByEmail = async (email) => {
+  const [rows, fields] = await pool.execute(`
+    SELECT * FROM user
+    WHERE email = ? 
+  `, [email]);
+
+  return rows.length > 0 ? rows[0] : null;
+};
 
 const findUserByCredentials = async (email, password) => {
   const [rows, fields] = await pool.execute(`
@@ -141,6 +149,7 @@ const findUserById = async (userId) => {
 
 module.exports = {
   createUser,
+  findUserByEmail,
   findUserByCredentials,
   updateUser,
   getAllUsers,

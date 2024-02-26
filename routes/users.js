@@ -1,6 +1,6 @@
 const express = require('express');
 const { celebrateCreateUser, celebrateLoginUser, celebrateEditUser } = require('../validators/users');
-const { createUser, findUserByCredentials, getAllUsers, updateUser, findUserById } = require('../models/user');
+const { createUser, findUserByEmail, findUserByCredentials, getAllUsers, updateUser, findUserById } = require('../models/user');
 const auth = require('../middlewares/auth');
 const jwt = require('jsonwebtoken');
 
@@ -18,10 +18,10 @@ router.get('/users', async (req, res, next) => {
 router.post('/signup', celebrateCreateUser, async (req, res, next) => {
   try {
 
-    // const existingUser = await findUserByEmail(req.body.email);
-    // if (existingUser) {
-    //   throw new Error('Email is already registered');
-    // }
+    const existingUser = await findUserByEmail(req.body.email);
+    if (existingUser) {
+      throw new Error('Email is already registered');
+    }
 
     const userId = await createUser(req.body);
 
