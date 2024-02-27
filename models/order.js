@@ -10,14 +10,15 @@ const createOrder = async (orderData) => {
     sum,
     product_quantity,
     products_info,
-    orderNumber
+    orderNumber,
+    date_order
   } = orderData;
 
   try {
     const [rows, fields] = await pool.execute(
       `
-        INSERT INTO orders (user_id, phone, email, address, city, sum, product_quantity, products_info, orderNumber)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO orders (user_id, phone, email, address, city, sum, product_quantity, products_info, orderNumber, date_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         userId,
@@ -28,7 +29,8 @@ const createOrder = async (orderData) => {
         sum,
         product_quantity,
         products_info,
-        orderNumber
+        orderNumber,
+        date_order
       ]
     );
 
