@@ -1,6 +1,6 @@
 const express = require('express');
-const { celebrateCreateUser, celebrateLoginUser, celebrateEditUser } = require('../validators/users');
-const { createUser, findUserByEmail, findUserByCredentials, getAllUsers, updateUser, findUserById } = require('../models/user');
+const { celebrateCreateUser, celebrateLoginUser, celebrateEditUser, celebrateChangePassword } = require('../validators/users');
+const { createUser, findUserByEmail, findUserByCredentials, getAllUsers, updateUser, findUserById, changePassword } = require('../models/user');
 const auth = require('../middlewares/auth');
 const jwt = require('jsonwebtoken');
 
@@ -69,7 +69,7 @@ router.patch('/users-me', celebrateEditUser, auth, async (req, res, next) => {
 
 router.get('/user', auth, async (req, res, next) => {
   try {
-    const userId = req.user._id; // Assuming you have a middleware that sets the user ID in the request object during authentication
+    const userId = req.user._id; 
     const user = await findUserById(userId);
 
     if (!user) {
@@ -77,6 +77,19 @@ router.get('/user', auth, async (req, res, next) => {
     }
 
     res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/change-password', celebrateChangePassword, auth, async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+    const { oldPassword, newPassword } = req.body;
+
+    await changePassword(userId, oldPassword, newPassword);
+
+    res.json({ message: 'Password updated successfully' });
   } catch (error) {
     next(error);
   }

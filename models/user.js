@@ -1,6 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { emailRegex, pool } = require('../utils/utils');
-// const { ValidationError, ConflictError } = require('../errors');
+const { pool } = require('../utils/utils');
 
 const createUser = async (userData) => {
   const { name, surname, phone, email, address, password, city, area } = userData;
@@ -53,55 +52,6 @@ const findUserByCredentials = async (email, password) => {
   return user;
 };
 
-// const updateUser = async (userId, updatedUserData) => {
-//   const { name, surname, phone, email, address } = updatedUserData;
-  
-//   // Проверка и установка только определенных полей
-//   const updateFields = [];
-//   const updateValues = [];
-
-//   if (name !== undefined) {
-//     updateFields.push('name');
-//     updateValues.push(name);
-//   }
-
-//   if (surname !== undefined) {
-//     updateFields.push('surname');
-//     updateValues.push(surname);
-//   }
-
-//   if (phone !== undefined) {
-//     updateFields.push('phone');
-//     updateValues.push(phone);
-//   }
-
-//   if (email !== undefined) {
-//     updateFields.push('email');
-//     updateValues.push(email);
-//   }
-
-//   if (address !== undefined) {
-//     updateFields.push('address');
-//     updateValues.push(address);
-//   }
-
-//   try {
-//     const [rows, fields] = await pool.execute(
-//       `
-//       UPDATE user
-//       SET ${updateFields.map(field => `${field} = ?`).join(', ')}
-//       WHERE id = ?
-//       `,
-//       [...updateValues, userId]
-//     );
-
-//   } catch (error) {
-//     console.error("Error in updateUser:", error);
-//     throw error;
-//   }
-// };
-
-
 const updateUser = async (userId, updatedUserData) => {
   const fieldsToUpdate = Object.entries(updatedUserData)
     .filter(([key, value]) => value !== undefined)
@@ -126,7 +76,6 @@ const updateUser = async (userId, updatedUserData) => {
   }
 };
 
-
 const getAllUsers = async () => {
   const [rows, fields] = await pool.execute('SELECT * FROM user');
   return rows;
@@ -147,11 +96,39 @@ const findUserById = async (userId) => {
   return user;
 };
 
+const findUserByIdNotSecure = async (userId) => {
+  const [rows, fields] = await pool.execute(`
+    SELECT * FROM user
+    WHERE id = ? 
+  `, [userId]);
+
+  if (!rows || rows.length === 0) {
+    return null;
+  }
+
+  const user = rows[0];
+  return user;
+};
+
+const changePassword = async (userId, oldPassword, newPassword) => {
+  const user = await findUserByIdNotSecure(userId);
+
+  const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
+  
+  if (!isPasswordMatch) {
+    throw new Error('Old password is incorrect');
+  }
+
+  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+  await updateUser(userId, { password: hashedNewPassword });
+};
+
 module.exports = {
   createUser,
   findUserByEmail,
   findUserByCredentials,
   updateUser,
   getAllUsers,
-  findUserById
+  findUserById,
+  changePassword
 };

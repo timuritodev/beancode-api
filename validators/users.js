@@ -32,3 +32,11 @@ module.exports.celebrateEditUser = celebrate({
     area: Joi.string().allow(''),
   }),
 });
+
+module.exports.celebrateChangePassword = celebrate({
+  body: Joi.object().keys({
+    userId: Joi.number().required(),
+    oldPassword: Joi.string().required(),
+    newPassword: Joi.string().required(),
+  }),
+});
