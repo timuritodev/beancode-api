@@ -1,6 +1,27 @@
 require('dotenv').config();
-// mailer.js
 const nodemailer = require('nodemailer');
+
+const sendPasswordResetEmail = async (email, token) => {
+  const transporter = nodemailer.createTransport({
+    host: process.env.HOST,
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.MAIL,
+      pass: process.env.PASS,
+    },
+  });
+
+  const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+  const mailOptions = {
+    from: process.env.MAIL,
+    to: email,
+    subject: 'Сброс Пароля',
+    text: `Перейдите по следующей ссылке для сброса пароля: ${resetLink}`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
 
 const sendEmail = async ({ from, subject, text }) => {
   try {
@@ -52,5 +73,6 @@ const sendEmail = async ({ from, subject, text }) => {
 };
 
 module.exports = {
-  sendEmail
+  sendEmail,
+  sendPasswordResetEmail
 };

@@ -1,8 +1,11 @@
 const express = require('express');
 const { celebrateCreateUser, celebrateLoginUser, celebrateEditUser, celebrateChangePassword } = require('../validators/users');
 const { createUser, findUserByEmail, findUserByCredentials, getAllUsers, updateUser, findUserById, changePassword } = require('../models/user');
+const { saveResetToken, getResetTokenInfo, removeResetToken } = require("../models/resetToken");
+const { sendPasswordResetEmail } = require("../models/mailer");
 const auth = require('../middlewares/auth');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const router = express.Router();
 
@@ -94,5 +97,63 @@ router.patch('/change-password', celebrateChangePassword, auth, async (req, res,
     next(error);
   }
 });
+
+const generateToken = () => {
+  return crypto.randomBytes(20).toString('hex');
+};
+
+router.post('/forgot-password', async (req, res, next) => {
+  const { email } = req.body;
+
+  try {
+    const user = await findUserByEmail(email);
+
+    if (!user) {
+      throw new Error('Пользователь не найден');
+    }
+
+    const resetToken = generateToken();
+    // Установите время истечения, например, 1 час от текущего момента
+    const expirationTime = Date.now() + 3600000;
+
+    // Сохраните токен сброса и время истечения в базе данных
+    // (вам нужно создать новую таблицу или документ для сброса пароля)
+    await saveResetToken(user.id, resetToken, expirationTime);
+
+    // Отправьте электронное письмо для сброса пароля
+    await sendPasswordResetEmail(email, resetToken);
+
+    res.json({ message: 'Электронное письмо для сброса пароля успешно отправлено' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/reset-password', async (req, res, next) => {
+  const { token, newPassword } = req.body;
+
+  console.log('Token from request:', token, newPassword);
+
+  try {
+    // Получите идентификатор пользователя и время истечения для данного токена сброса
+    const { userId, expirationTime } = await getResetTokenInfo(token);
+
+    // Проверьте, является ли токен действительным и не истек ли его срок действия
+    if (!userId || Date.now() > expirationTime) {
+      throw new Error('Недействительный или просроченный токен');
+    }
+
+    // Сбросьте пароль пользователя
+    await changePassword(userId, null, newPassword);
+
+    // Удалите токен сброса из базы данных
+    await removeResetToken(userId);
+
+    res.json({ message: 'Сброс пароля успешен' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 module.exports = router;

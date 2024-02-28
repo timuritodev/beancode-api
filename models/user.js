@@ -111,17 +111,32 @@ const findUserByIdNotSecure = async (userId) => {
 };
 
 const changePassword = async (userId, oldPassword, newPassword) => {
-  const user = await findUserByIdNotSecure(userId);
+  if (oldPassword) {
+    const user = await findUserByIdNotSecure(userId);
+    const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
 
-  const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
-  
-  if (!isPasswordMatch) {
-    throw new Error('Old password is incorrect');
+    if (!isPasswordMatch) {
+      throw new Error('Old password is incorrect');
+    }
   }
 
   const hashedNewPassword = await bcrypt.hash(newPassword, 10);
   await updateUser(userId, { password: hashedNewPassword });
 };
+
+
+// const changePassword = async (userId, oldPassword, newPassword) => {
+//   const user = await findUserByIdNotSecure(userId);
+
+//   const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
+  
+//   if (!isPasswordMatch) {
+//     throw new Error('Old password is incorrect');
+//   }
+
+//   const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+//   await updateUser(userId, { password: hashedNewPassword });
+// };
 
 module.exports = {
   createUser,
