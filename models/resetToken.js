@@ -1,4 +1,9 @@
 const { pool } = require("../utils/utils");
+const crypto = require("crypto");
+
+const generateToken = () => {
+  return crypto.randomBytes(20).toString("hex");
+};
 
 const saveResetToken = async (userId, token, expirationTime) => {
   try {
@@ -9,7 +14,6 @@ const saveResetToken = async (userId, token, expirationTime) => {
         `,
       [userId, token, new Date(expirationTime).toISOString()]
     );
-
   } catch (error) {
     console.error("Error in saveResetToken:", error);
     throw error;
@@ -65,6 +69,7 @@ const removeResetToken = async (userId) => {
 };
 
 module.exports = {
+  generateToken,
   saveResetToken,
   getResetTokenInfo,
   removeResetToken,

@@ -1,37 +1,24 @@
 const { pool } = require("../utils/utils");
 
+// create table wholesale(
+//     id int auto_increment primary key,
+//     title varchar(100) not null,
+//     inn int not null,
+//     fio varchar(100) not null,
+//     phone varchar(100) not null,
+//     email varchar(100) not null
+//     );
+
 const createWholesale = async (wholesaleData) => {
-  const {
-    userId,
-    phone,
-    email,
-    address,
-    city,
-    sum,
-    product_quantity,
-    products_info,
-    orderNumber,
-    date_order,
-  } = wholesaleData;
+  const { title, inn, fio, phone, email } = wholesaleData;
 
   try {
     const [rows, fields] = await pool.execute(
       `
-        INSERT INTO wholesale (user_id, phone, email, address, city, sum, product_quantity, products_info, orderNumber, date_order)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO wholesale (title, inn, fio, phone, email)
+        VALUES (?, ?, ?, ?, ?)
       `,
-      [
-        userId,
-        phone,
-        email,
-        address,
-        city,
-        sum,
-        product_quantity,
-        products_info,
-        orderNumber,
-        date_order,
-      ]
+      [title, inn, fio, phone, email]
     );
 
     console.log("Rows inserted:", rows);

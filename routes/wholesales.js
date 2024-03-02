@@ -6,9 +6,9 @@ const router = express.Router();
 router.post("/wholesale/send", async (req, res) => {
   const wholesaleData = req.body;
   try {
-    const orderId = await wholesaleModel.createOrder(wholesaleData);
-    if (orderId) {
-      res.status(201).json({ orderId });
+    const wholesaleId = await wholesaleModel.createWholesale(wholesaleData);
+    if (wholesaleId) {
+      res.status(201).json({ success: true });
     } else {
       res.status(400).json({ error: "Failed to create order" });
     }
