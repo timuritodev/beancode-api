@@ -12,6 +12,7 @@ const productRoutes = require("./routes/products");
 const userRoutes = require("./routes/users");
 const mailerRoutes = require("./routes/mailers");
 const orderRoutes = require("./routes/orders");
+const orderBackupRoutes = require("./routes/orderBackups");
 const cartRoutes = require("./routes/carts");
 const subcriptionRoutes = require("./routes/subscriptions");
 const wholesaleRoutes = require("./routes/wholesales");
@@ -107,6 +108,8 @@ app.use(userRoutes);
 app.use(mailerRoutes);
 
 app.use(orderRoutes);
+
+app.use(orderBackupRoutes);
 
 app.use(cartRoutes);
 
