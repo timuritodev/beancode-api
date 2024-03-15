@@ -16,6 +16,7 @@ const orderBackupRoutes = require("./routes/orderBackups");
 const cartRoutes = require("./routes/carts");
 const subcriptionRoutes = require("./routes/subscriptions");
 const wholesaleRoutes = require("./routes/wholesales");
+const promoRoutes = require("./routes/promos");
 // const { celebrateCreateUser, celebrateLoginUser } = require('./validators/users');
 const NotFoundError = require("./errors/NotFoundError");
 const { requestLogger, errorLogger } = require("./middlewares/logger");
@@ -116,6 +117,9 @@ app.use(cartRoutes);
 app.use(subcriptionRoutes);
 
 app.use(wholesaleRoutes);
+
+app.use(promoRoutes);
+
 
 app.use("/service.php", (req, res) => {
   const filePath = path.join(__dirname, "service.php");
