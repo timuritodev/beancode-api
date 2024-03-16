@@ -15,7 +15,7 @@ router.post("/promo-codes", async (req, res, next) => {
     }
 
     // Добавление промокода в базу данных
-    const promoCodeId = await createPromoCode({
+    const promoCodeId = await promoModel.createPromoCode({
       promo,
       discount,
       valid_from,
@@ -80,7 +80,6 @@ router.get("/promo-codes", async (req, res, next) => {
 
 module.exports = router;
 
-
 // INSERT INTO promo_codes (promo, discount, valid_from, valid_until)
 // VALUES ('FIRST', 10, NOW(), DATE_ADD(NOW(), INTERVAL 1 MONTH));
 
@@ -100,5 +99,3 @@ module.exports = router;
 //     FOREIGN KEY (user_id) REFERENCES user(id),
 //     FOREIGN KEY (promo_code_id) REFERENCES promo_codes(id)
 //   );
-  
-  
