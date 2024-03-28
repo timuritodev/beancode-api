@@ -5,8 +5,8 @@ const express = require("express");
 const helmet = require("helmet");
 const { errors } = require("celebrate");
 const cors = require("cors");
-const dotenv = require("dotenv");
-const path = require("path");
+// const dotenv = require("dotenv");
+// const path = require("path");
 // const { login, createUser } = require('./controllers/users');
 const productRoutes = require("./routes/products");
 const userRoutes = require("./routes/users");
@@ -23,7 +23,7 @@ const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/errorHandler");
 const rateLimiter = require("./middlewares/rateLimit");
 const { createProxyMiddleware } = require("http-proxy-middleware");
-const fs = require('fs');
+// const fs = require('fs');
 
 const { PORT = 3001 } = process.env;
 
@@ -119,26 +119,6 @@ app.use(subcriptionRoutes);
 app.use(wholesaleRoutes);
 
 app.use(promoRoutes);
-
-
-app.use("/service.php", (req, res) => {
-  const filePath = path.join(__dirname, "service.php");
-
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send('Internal Server Error');
-    }
-
-    res.set('Content-Type', 'text/plain');
-    res.send(data);
-  });
-});
-
-// app.use("/service.php", (req, res) => {
-//   // Ваша логика обработки запросов к service.php
-//   res.sendFile(path.join(__dirname, "service.php"));
-// });
 
 app.use((req, res, next) => next(new NotFoundError("Страница не найдена")));
 app.use(errorLogger);

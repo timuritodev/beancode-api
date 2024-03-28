@@ -7,10 +7,10 @@ const createUser = async (userData) => {
   try {
     const [rows, fields] = await pool.execute(
       `
-      INSERT INTO user (name, surname, phone, email, address, password, city, area)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO user (name, surname, phone, email, address, password, city, area, registered_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      [name, surname, phone, email, address, hashedPassword, city, area]
+      [name, surname, phone, email, address, hashedPassword, city, area, new Date()]
     );
 
     console.log("Rows inserted:", rows);
@@ -47,6 +47,13 @@ const findUserByCredentials = async (email, password) => {
   if (!isPasswordMatch) {
     return null;
   }
+
+  // Увеличение счетчика заходов
+  await pool.execute(`
+    UPDATE user
+    SET login_count = login_count + 1
+    WHERE email = ?
+  `, [email]);
 
   delete user.password;
   return user;
