@@ -17,6 +17,7 @@ const cartRoutes = require("./routes/carts");
 const subcriptionRoutes = require("./routes/subscriptions");
 const wholesaleRoutes = require("./routes/wholesales");
 const promoRoutes = require("./routes/promos");
+const sessionCartRoutes = require("./routes/session_carts");
 // const { celebrateCreateUser, celebrateLoginUser } = require('./validators/users');
 const NotFoundError = require("./errors/NotFoundError");
 const { requestLogger, errorLogger } = require("./middlewares/logger");
@@ -24,6 +25,7 @@ const errorHandler = require("./middlewares/errorHandler");
 const rateLimiter = require("./middlewares/rateLimit");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 // const fs = require('fs');
+const session = require('express-session');
 
 const { PORT = 3001 } = process.env;
 
@@ -31,9 +33,21 @@ const app = express();
 
 app.use(bodyParser.json());
 
+app.use(session({
+  secret: 'mister_fox',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    // secure: process.env.NODE_ENV === "production", // Если ваш сайт работает по HTTPS
+    secure: false,
+    maxAge: 24 * 60 * 60 * 1000
+  }
+}));
+
 app.use(
   cors({
     origin: "*",
+    // credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -119,6 +133,8 @@ app.use(subcriptionRoutes);
 app.use(wholesaleRoutes);
 
 app.use(promoRoutes);
+
+app.use(sessionCartRoutes);
 
 app.use((req, res, next) => next(new NotFoundError("Страница не найдена")));
 app.use(errorLogger);
