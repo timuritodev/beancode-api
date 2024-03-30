@@ -4,8 +4,9 @@ const productModel = require("../models/product");
 
 const router = express.Router();
 
-router.get("/session-cart", async (req, res) => {
+router.get("/session-cart", async (req, res) => { 
   const sessionId = req.sessionID;
+  console.log(sessionId, 'get', Date.now())
   try {
     const cart = await sessionCartModel.getSessionCartByUserId(sessionId);
     if (!cart) {
@@ -24,7 +25,7 @@ router.post("/session-cart/add", async (req, res) => {
   const { productId, product_price, product_weight } = req.body;
   const sessionId = req.sessionID; // Вытаскиваем ID сессии
 
-  console.log(sessionId, 'вот онанана')
+  console.log(sessionId, 'add', Date.now())
   const product = await productModel.getProductById(productId);
   try {
     // Вызываем метод модели корзины для добавления товара
@@ -58,7 +59,7 @@ router.post("/session-cart/add", async (req, res) => {
 router.post("/session-cart/remove", async (req, res) => {
   const { productId, product_price, product_weight } = req.body;
   const sessionId = req.sessionID; // Вытаскиваем ID сессии
-
+  console.log(sessionId, 'delete', Date.now())
   try {
     const result = await sessionCartModel.removeFromSessionCart(
       sessionId,

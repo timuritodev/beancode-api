@@ -24,8 +24,10 @@ const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/errorHandler");
 const rateLimiter = require("./middlewares/rateLimit");
 const { createProxyMiddleware } = require("http-proxy-middleware");
-// const fs = require('fs');
-const session = require('express-session');
+const mysql = require("mysql2/promise");
+const session = require("express-session");
+const MySQLStore = require("express-mysql-session")(session);
+const { pool } = require("./utils/utils");
 
 const { PORT = 3001 } = process.env;
 
@@ -33,21 +35,49 @@ const app = express();
 
 app.use(bodyParser.json());
 
-app.use(session({
-  secret: 'mister_fox',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    // secure: process.env.NODE_ENV === "production", // Если ваш сайт работает по HTTPS
-    secure: false,
-    maxAge: 24 * 60 * 60 * 1000
+// const sessionStore = new MySQLStore(pool);
+
+const sessionStore = new MySQLStore({
+  createDatabaseTable: true,
+  schema: {
+    tableName: 'sessions',
+    // columnNames: {
+    //   session_id: 'custom_session_id',
+    //   expires: 'custom_expires_column_name',
+    //   data: 'custom_data_column_name'
+    // }
   }
-}));
+}, pool);
+
+
+pool
+  .getConnection()
+  .then((connection) => {
+    console.log("Успешное подключение к базе данных.");
+    connection.release();
+  })
+  .catch((err) => {
+    console.error("Ошибка подключения к базе данных:", err);
+  });
+
+app.use(
+  session({
+    secret: "mister_fox",
+    resave: false,
+    saveUninitialized: true,
+    store: sessionStore,
+    cookie: {
+      secure: false,
+      httpOnly: false,
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  })
+);
 
 app.use(
   cors({
-    origin: "*",
-    // credentials: true,
+    origin: "http://localhost:5173", // Укажите здесь домен вашего клиента
+    credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -56,12 +86,6 @@ app.use(
 //   res.header({ "Access-Control-Allow-Origin": "*" });
 //   next();
 // });
-
-// const config = dotenv.config({
-//   path: path
-//     .resolve(process.env.NODE_ENV === 'production' ? '.env' : '.env.common'),
-// })
-//   .parsed;
 
 const config = {
   JWT_SALT: process.env.JWT_SALT,
@@ -78,6 +102,23 @@ app.get("/crash-test", () => {
   }, 0);
 });
 
+// Добавляем маршрут для обработки запроса по адресу "/"
+// app.get("/session-cart", (req, res) => {
+//   // Проверяем, существует ли уже сессия
+//   if (!req.session.userId) {
+//     // Если сессия не существует, создаем ее
+//     req.session.userId = '123245'; // Пример: устанавливаем идентификатор пользователя в сессии
+//     console.log('Сессия создана:', req.session.userId);
+//   } else {
+//     console.log('Сессия уже существует:', req.session.userId);
+//   }
+  
+//   // Возвращаем ответ клиенту
+//   res.send('Session initialized');
+// });
+
+
+
 const proxyOptionsDeliver = {
   target: "https://api.edu.cdek.ru/v2/orders",
   // target: 'https://api.cdek.ru/v2/orders',
@@ -87,20 +128,23 @@ const proxyOptionsDeliver = {
   },
 };
 
-const apiProxyOther = createProxyMiddleware("/api-other", proxyOptionsDeliver);
+const apiProxyDeliver = createProxyMiddleware(
+  "/api-other",
+  proxyOptionsDeliver
+);
 
 const proxyOptionsStatus = {
-  target: 'https://payment.alfabank.ru/payment/rest/getOrderStatus.do',
+  target: "https://payment.alfabank.ru/payment/rest/getOrderStatus.do",
   changeOrigin: true,
   pathRewrite: {
     "^/api-status": "",
   },
 };
 
-const apiProxyStatus = createProxyMiddleware("/api-status", proxyOptionsStatus)
+const apiProxyStatus = createProxyMiddleware("/api-status", proxyOptionsStatus);
 
 const proxyOptionsPay = {
-  target: 'https://payment.alfabank.ru/payment/rest/register.do',
+  target: "https://payment.alfabank.ru/payment/rest/register.do",
   // target: "https://alfa.rbsuat.com/payment/rest/register.do",
   changeOrigin: true,
   pathRewrite: {
@@ -110,7 +154,7 @@ const proxyOptionsPay = {
 
 const apiProxy = createProxyMiddleware("/api-pay", proxyOptionsPay);
 
-app.use("/api-deliver", apiProxyOther);
+app.use("/api-deliver", apiProxyDeliver);
 
 app.use("/api-status", apiProxyStatus);
 

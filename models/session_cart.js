@@ -170,3 +170,9 @@ module.exports = {
 //     FOREIGN KEY (session_cart_id) REFERENCES session_cart(id),
 //     FOREIGN KEY (product_id) REFERENCES product(id)
 //   );
+
+// CREATE TABLE sessions (
+//     session_id VARCHAR(128) NOT NULL PRIMARY KEY,
+//     expires BIGINT UNSIGNED NOT NULL,
+//     data TEXT
+// );
