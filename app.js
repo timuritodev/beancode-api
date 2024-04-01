@@ -77,7 +77,7 @@ app.use(
 
 app.use(
   cors({
-    origin: "https://beancode.ru/",
+    origin: "https://beancode.ru",
     credentials: true,
     allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
   })
