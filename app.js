@@ -18,13 +18,11 @@ const subcriptionRoutes = require("./routes/subscriptions");
 const wholesaleRoutes = require("./routes/wholesales");
 const promoRoutes = require("./routes/promos");
 const sessionCartRoutes = require("./routes/session_carts");
-// const { celebrateCreateUser, celebrateLoginUser } = require('./validators/users');
 const NotFoundError = require("./errors/NotFoundError");
 const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/errorHandler");
 const rateLimiter = require("./middlewares/rateLimit");
 const { createProxyMiddleware } = require("http-proxy-middleware");
-const mysql = require("mysql2/promise");
 const session = require("express-session");
 const MySQLStore = require("express-mysql-session")(session);
 const { pool } = require("./utils/utils");
@@ -34,8 +32,6 @@ const { PORT = 3001 } = process.env;
 const app = express();
 
 app.use(bodyParser.json());
-
-// const sessionStore = new MySQLStore(pool);
 
 const sessionStore = new MySQLStore({
   createDatabaseTable: true,
@@ -49,17 +45,6 @@ const sessionStore = new MySQLStore({
   }
 }, pool);
 
-
-pool
-  .getConnection()
-  .then((connection) => {
-    console.log("Успешное подключение к базе данных.");
-    connection.release();
-  })
-  .catch((err) => {
-    console.error("Ошибка подключения к базе данных:", err);
-  });
-
 app.use(
   session({
     secret: "mister_fox",
@@ -67,8 +52,8 @@ app.use(
     saveUninitialized: true,
     store: sessionStore,
     cookie: {
-      secure: false,
-      httpOnly: false,
+      secure: true,
+      httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
@@ -76,7 +61,8 @@ app.use(
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // Укажите здесь домен вашего клиента
+    // origin: "http://localhost:5173",
+    origin: "https://beancode.ru",
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -101,23 +87,6 @@ app.get("/crash-test", () => {
     throw new Error("Сервер сейчас упадёт");
   }, 0);
 });
-
-// Добавляем маршрут для обработки запроса по адресу "/"
-// app.get("/session-cart", (req, res) => {
-//   // Проверяем, существует ли уже сессия
-//   if (!req.session.userId) {
-//     // Если сессия не существует, создаем ее
-//     req.session.userId = '123245'; // Пример: устанавливаем идентификатор пользователя в сессии
-//     console.log('Сессия создана:', req.session.userId);
-//   } else {
-//     console.log('Сессия уже существует:', req.session.userId);
-//   }
-  
-//   // Возвращаем ответ клиенту
-//   res.send('Session initialized');
-// });
-
-
 
 const proxyOptionsDeliver = {
   target: "https://api.edu.cdek.ru/v2/orders",
