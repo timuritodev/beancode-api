@@ -70,10 +70,10 @@ app.use(
   })
 );
 
-app.use((req, res, next) => {
-  res.header({ "Access-Control-Allow-Origin": "*" });
-  next();
-});
+// app.use((req, res, next) => {
+//   res.header({ "Access-Control-Allow-Origin": "*" });
+//   next();
+// });
 
 const config = {
   JWT_SALT: process.env.JWT_SALT,
