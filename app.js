@@ -71,8 +71,10 @@ app.use((req, res, next) => {
 
 app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Добавьте дополнительные заголовки, если это необходимо
   res.status(200).send();
 });
+
 
 
 // app.use(
