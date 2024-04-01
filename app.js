@@ -62,18 +62,31 @@ app.use(
   })
 );
 
+app.use(cors(
+  {
+    origin: '*',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  },
+));
+
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://beancode.ru");
-  res.header("Access-Control-Allow-Credentials", true);
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header({ 'Access-Control-Allow-Origin': '*' });
   next();
 });
 
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Добавьте дополнительные заголовки, если это необходимо
-  res.status(200).send();
-});
+// app.use((req, res, next) => {
+//   res.header("Access-Control-Allow-Origin", "https://beancode.ru");
+//   res.header("Access-Control-Allow-Credentials", true);
+//   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+//   next();
+// });
+
+// app.options('*', (req, res) => {
+//   res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE');
+//   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Добавьте дополнительные заголовки, если это необходимо
+//   res.status(200).send();
+// });
 
 
 
