@@ -120,11 +120,11 @@ const proxyOptionsPay = {
 
 const apiProxy = createProxyMiddleware("/api/api-pay", proxyOptionsPay);
 
-app.use("/api-deliver", apiProxyDeliver);
+app.use("/api/api-deliver", apiProxyDeliver);
 
-app.use("/api-status", apiProxyStatus);
+app.use("/api/api-status", apiProxyStatus);
 
-app.use("/api-pay", apiProxy);
+app.use("/api/api-pay", apiProxy);
 
 app.use(productRoutes);
 
