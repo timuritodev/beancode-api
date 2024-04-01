@@ -69,6 +69,11 @@ app.use((req, res, next) => {
   next();
 });
 
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE');
+  res.status(200).send();
+});
+
 
 // app.use(
 //   cors({
