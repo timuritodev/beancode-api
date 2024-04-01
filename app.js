@@ -33,17 +33,20 @@ const app = express();
 
 app.use(bodyParser.json());
 
-const sessionStore = new MySQLStore({
-  createDatabaseTable: true,
-  schema: {
-    tableName: 'sessions',
-    // columnNames: {
-    //   session_id: 'custom_session_id',
-    //   expires: 'custom_expires_column_name',
-    //   data: 'custom_data_column_name'
-    // }
-  }
-}, pool);
+const sessionStore = new MySQLStore(
+  {
+    createDatabaseTable: true,
+    schema: {
+      tableName: "sessions",
+      // columnNames: {
+      //   session_id: 'custom_session_id',
+      //   expires: 'custom_expires_column_name',
+      //   data: 'custom_data_column_name'
+      // }
+    },
+  },
+  pool
+);
 
 app.use(
   session({
@@ -61,17 +64,16 @@ app.use(
 
 app.use(
   cors({
-    // origin: "http://localhost:5173",
     origin: "https://beancode.ru",
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// app.use((req, res, next) => {
-//   res.header({ "Access-Control-Allow-Origin": "*" });
-//   next();
-// });
+app.use((req, res, next) => {
+  res.header({ "Access-Control-Allow-Origin": "*" });
+  next();
+});
 
 const config = {
   JWT_SALT: process.env.JWT_SALT,
