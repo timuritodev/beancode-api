@@ -4,7 +4,7 @@ const productModel = require("../models/product");
 
 const router = express.Router();
 
-router.get("/session-cart", async (req, res) => { 
+router.get("/api/session-cart", async (req, res) => { 
   const sessionId = req.sessionID;
   console.log(sessionId, 'get', Date.now())
   try {
@@ -21,7 +21,7 @@ router.get("/session-cart", async (req, res) => {
   }
 });
 
-router.post("/session-cart/add", async (req, res) => {
+router.post("/api/session-cart/add", async (req, res) => {
   const { productId, product_price, product_weight } = req.body;
   const sessionId = req.sessionID; // Вытаскиваем ID сессии
 
@@ -56,7 +56,7 @@ router.post("/session-cart/add", async (req, res) => {
   }
 });
 
-router.post("/session-cart/remove", async (req, res) => {
+router.post("/api/session-cart/remove", async (req, res) => {
   const { productId, product_price, product_weight } = req.body;
   const sessionId = req.sessionID; // Вытаскиваем ID сессии
   console.log(sessionId, 'delete', Date.now())
@@ -84,7 +84,7 @@ router.post("/session-cart/remove", async (req, res) => {
   }
 });
 
-router.delete("/session-cart/clear", async (req, res) => {
+router.delete("/api/session-cart/clear", async (req, res) => {
   const sessionId = req.sessionID; // Вытаскиваем ID сессии
 
   try {

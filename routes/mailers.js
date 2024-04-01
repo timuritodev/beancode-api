@@ -3,7 +3,7 @@ const { sendEmailInfo, sendOrderDetails } = require("../models/mailer");
 
 const router = express.Router();
 
-router.post("/send-email", async (req, res) => {
+router.post("/api/send-email", async (req, res) => {
   try {
     const { email, subject, text, greetings } = req.body;
     await sendEmailInfo({ email, subject, text });

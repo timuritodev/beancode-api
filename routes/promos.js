@@ -4,7 +4,7 @@ const promoModel = require("../models/promo");
 const router = express.Router();
 // Добавление промокода
 
-router.post("/promo-codes", async (req, res, next) => {
+router.post("/api/promo-codes", async (req, res, next) => {
   try {
     const { promo, discount, valid_from, valid_until } = req.body;
 
@@ -29,7 +29,7 @@ router.post("/promo-codes", async (req, res, next) => {
 });
 
 // Применение промокода к заказу
-router.post("/apply-promo-code", async (req, res, next) => {
+router.post("/api/apply-promo-code", async (req, res, next) => {
   try {
     const { promo, userId } = req.body;
 
@@ -69,7 +69,7 @@ router.post("/apply-promo-code", async (req, res, next) => {
 });
 
 // Получение списка промокодов
-router.get("/promo-codes", async (req, res, next) => {
+router.get("/api/promo-codes", async (req, res, next) => {
   try {
     const promoCodes = await promoModel.getAllPromoCodes();
     res.json({ promoCodes });

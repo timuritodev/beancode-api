@@ -3,7 +3,7 @@ const wholesaleModel = require("../models/wholesale");
 
 const router = express.Router();
 
-router.post("/wholesale/send", async (req, res) => {
+router.post("/api/wholesale/send", async (req, res) => {
   const wholesaleData = req.body;
   try {
     const wholesaleId = await wholesaleModel.createWholesale(wholesaleData);

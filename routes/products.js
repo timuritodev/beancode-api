@@ -13,7 +13,7 @@ router.get("/api/products", async (req, res) => {
   }
 });
 
-router.get("/products/:id", async (req, res) => {
+router.get("/api/products/:id", async (req, res) => {
   const productId = req.params.id;
 
   try {

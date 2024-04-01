@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-router.get('/users', async (req, res, next) => {
+router.get('/api/users', async (req, res, next) => {
   try {
     const users = await getAllUsers();
     res.json({ users });
@@ -17,7 +17,7 @@ router.get('/users', async (req, res, next) => {
   }
 });
 
-router.post('/signup', celebrateCreateUser, async (req, res, next) => {
+router.post('/api/signup', celebrateCreateUser, async (req, res, next) => {
   try {
 
     const existingUser = await findUserByEmail(req.body.email);
@@ -36,7 +36,7 @@ router.post('/signup', celebrateCreateUser, async (req, res, next) => {
   }
 });
 
-router.post('/signin', celebrateLoginUser, async (req, res, next) => {
+router.post('/api/signin', celebrateLoginUser, async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
@@ -55,7 +55,7 @@ router.post('/signin', celebrateLoginUser, async (req, res, next) => {
   }
 });
 
-router.patch('/users-me', celebrateEditUser, auth, async (req, res, next) => {
+router.patch('/api/users-me', celebrateEditUser, auth, async (req, res, next) => {
   try {
     const userId = req.user._id; 
     const updatedUserData = req.body;
@@ -69,7 +69,7 @@ router.patch('/users-me', celebrateEditUser, auth, async (req, res, next) => {
   }
 });
 
-router.get('/user', auth, async (req, res, next) => {
+router.get('/api/user', auth, async (req, res, next) => {
   try {
     const userId = req.user._id; 
     const user = await findUserById(userId);
@@ -84,7 +84,7 @@ router.get('/user', auth, async (req, res, next) => {
   }
 });
 
-router.patch('/change-password', celebrateChangePassword, auth, async (req, res, next) => {
+router.patch('/api/change-password', celebrateChangePassword, auth, async (req, res, next) => {
   try {
     const userId = req.user._id;
     const { oldPassword, newPassword } = req.body;
@@ -97,7 +97,7 @@ router.patch('/change-password', celebrateChangePassword, auth, async (req, res,
   }
 });
 
-router.post('/forgot-password', async (req, res, next) => {
+router.post('/api/forgot-password', async (req, res, next) => {
   const { email } = req.body;
 
   try {
@@ -121,7 +121,7 @@ router.post('/forgot-password', async (req, res, next) => {
   }
 });
 
-router.post('/reset-password', async (req, res, next) => {
+router.post('/api/reset-password', async (req, res, next) => {
   const { token, newPassword } = req.body;
 
   try {

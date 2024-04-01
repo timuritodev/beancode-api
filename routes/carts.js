@@ -4,7 +4,7 @@ const productModel = require("../models/product");
 
 const router = express.Router();
 
-router.get("/cart/:id", async (req, res) => {
+router.get("/api/cart/:id", async (req, res) => {
   const userId = req.params.id;
 
   try {
@@ -21,7 +21,7 @@ router.get("/cart/:id", async (req, res) => {
   }
 });
 
-router.post("/cart/add", async (req, res) => {
+router.post("/api/cart/add", async (req, res) => {
   const { userId, productId, product_price, product_weight } = req.body;
   const product = await productModel.getProductById(productId);
   try {
@@ -60,7 +60,7 @@ router.post("/cart/add", async (req, res) => {
   }
 });
 
-router.post("/cart/remove", async (req, res) => {
+router.post("/api/cart/remove", async (req, res) => {
   const { userId, productId, product_price, product_weight } = req.body;
 
   try {
@@ -88,7 +88,7 @@ router.post("/cart/remove", async (req, res) => {
   }
 });
 
-router.delete("/cart/:userId", async (req, res) => {
+router.delete("/api/cart/:userId", async (req, res) => {
   const userId = req.params.userId;
 
   try {
