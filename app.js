@@ -58,23 +58,9 @@ app.use(
       secure: false,
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
-      // sameSite: 'None',
     },
   })
 );
-
-// app.use((req, res, next) => {
-//   res.header("Access-Control-Allow-Origin", "https://beancode.ru");
-//   res.header("Access-Control-Allow-Credentials", true);
-//   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-//   next();
-// });
-
-// app.options('*', (req, res) => {
-//   res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE');
-//   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Добавьте дополнительные заголовки, если это необходимо
-//   res.status(200).send();
-// });
 
 app.use(
   cors({
@@ -104,12 +90,12 @@ const proxyOptionsDeliver = {
   // target: 'https://api.cdek.ru/v2/orders',
   changeOrigin: true,
   pathRewrite: {
-    "^/api-deliver": "", // You can modify this if needed
+    "^/api/api-deliver": "", // You can modify this if needed
   },
 };
 
 const apiProxyDeliver = createProxyMiddleware(
-  "/api-other",
+  "/api/api-other",
   proxyOptionsDeliver
 );
 
@@ -117,22 +103,22 @@ const proxyOptionsStatus = {
   target: "https://payment.alfabank.ru/payment/rest/getOrderStatus.do",
   changeOrigin: true,
   pathRewrite: {
-    "^/api-status": "",
+    "^/api/api-status": "",
   },
 };
 
-const apiProxyStatus = createProxyMiddleware("/api-status", proxyOptionsStatus);
+const apiProxyStatus = createProxyMiddleware("/api/api-status", proxyOptionsStatus);
 
 const proxyOptionsPay = {
   target: "https://payment.alfabank.ru/payment/rest/register.do",
   // target: "https://alfa.rbsuat.com/payment/rest/register.do",
   changeOrigin: true,
   pathRewrite: {
-    "^/api-pay": "",
+    "^/api/api-pay": "",
   },
 };
 
-const apiProxy = createProxyMiddleware("/api-pay", proxyOptionsPay);
+const apiProxy = createProxyMiddleware("/api/api-pay", proxyOptionsPay);
 
 app.use("/api-deliver", apiProxyDeliver);
 
