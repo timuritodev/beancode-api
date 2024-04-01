@@ -62,18 +62,18 @@ app.use(
   })
 );
 
-app.use(cors(
-  {
-    origin: '*',
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  },
-));
+// app.use(cors(
+//   {
+//     origin: '*',
+//     credentials: true,
+//     allowedHeaders: ['Content-Type', 'Authorization'],
+//   },
+// ));
 
-app.use((req, res, next) => {
-  res.header({ 'Access-Control-Allow-Origin': '*' });
-  next();
-});
+// app.use((req, res, next) => {
+//   res.header({ 'Access-Control-Allow-Origin': '*' });
+//   next();
+// });
 
 // app.use((req, res, next) => {
 //   res.header("Access-Control-Allow-Origin", "https://beancode.ru");
@@ -90,13 +90,13 @@ app.use((req, res, next) => {
 
 
 
-// app.use(
-//   cors({
-//     origin: "https://beancode.ru",
-//     credentials: true,
-//     allowedHeaders: ["Content-Type", "Authorization"],
-//   })
-// );
+app.use(
+  cors({
+    origin: "https://beancode.ru/",
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // app.use((req, res, next) => {
 //   res.header({ "Access-Control-Allow-Origin": "*" });
