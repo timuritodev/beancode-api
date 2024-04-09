@@ -38,11 +38,6 @@ const sessionStore = new MySQLStore(
     createDatabaseTable: true,
     schema: {
       tableName: "sessions",
-      // columnNames: {
-      //   session_id: 'custom_session_id',
-      //   expires: 'custom_expires_column_name',
-      //   data: 'custom_data_column_name'
-      // }
     },
   },
   pool
@@ -65,6 +60,7 @@ app.use(
 app.use(
   cors({
     origin: "https://beancode.ru",
+    // origin: "http://localhost:5173",
     credentials: true,
     allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
   })

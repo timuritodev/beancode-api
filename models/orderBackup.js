@@ -2,7 +2,7 @@ const { pool } = require("../utils/utils");
 
 const createOrderBackup = async (orderData) => {
   const {
-    userId,
+    userId = 0,
     phone,
     email,
     address,
