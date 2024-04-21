@@ -15,10 +15,10 @@ const createWholesale = async (wholesaleData) => {
   try {
     const [rows, fields] = await pool.execute(
       `
-        INSERT INTO wholesale (title, inn, fio, phone, email)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO wholesale (title, inn, fio, phone, email, consumption)
+        VALUES (?, ?, ?, ?, ?, ?)
       `,
-      [title, inn, fio, phone, email]
+      [title, inn, fio, phone, email, consumption]
     );
 
     console.log("Rows inserted:", rows);
