@@ -22,7 +22,7 @@ const NotFoundError = require("./errors/NotFoundError");
 const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/errorHandler");
 const rateLimiter = require("./middlewares/rateLimit");
-const { createProxyMiddleware } = require("http-proxy-middleware");
+const { apiProxyDeliver, apiProxyStatus, apiProxyPay } = require("./proxy");
 const session = require("express-session");
 const MySQLStore = require("express-mysql-session")(session);
 const { pool } = require("./utils/utils");
@@ -81,46 +81,11 @@ app.get("/crash-test", () => {
   }, 0);
 });
 
-const proxyOptionsDeliver = {
-  target: "https://api.edu.cdek.ru/v2/orders",
-  // target: 'https://api.cdek.ru/v2/orders',
-  changeOrigin: true,
-  pathRewrite: {
-    "^/api/api-deliver": "", // You can modify this if needed
-  },
-};
-
-const apiProxyDeliver = createProxyMiddleware(
-  "/api/api-other",
-  proxyOptionsDeliver
-);
-
-const proxyOptionsStatus = {
-  target: "https://payment.alfabank.ru/payment/rest/getOrderStatus.do",
-  changeOrigin: true,
-  pathRewrite: {
-    "^/api/api-status": "",
-  },
-};
-
-const apiProxyStatus = createProxyMiddleware("/api/api-status", proxyOptionsStatus);
-
-const proxyOptionsPay = {
-  target: "https://payment.alfabank.ru/payment/rest/register.do",
-  // target: "https://alfa.rbsuat.com/payment/rest/register.do",
-  changeOrigin: true,
-  pathRewrite: {
-    "^/api/api-pay": "",
-  },
-};
-
-const apiProxy = createProxyMiddleware("/api/api-pay", proxyOptionsPay);
-
 app.use("/api/api-deliver", apiProxyDeliver);
 
 app.use("/api/api-status", apiProxyStatus);
 
-app.use("/api/api-pay", apiProxy);
+app.use("/api/api-pay", apiProxyPay);
 
 app.use(productRoutes);
 

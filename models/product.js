@@ -1,6 +1,6 @@
 const { pool } = require("../utils/utils");
 
-const API_BASE_URL = 'https://beancode.ru/api';
+const API_BASE_URL = "https://beancode.ru/api";
 
 const getAllProducts = async () => {
   const [rows, fields] = await pool.execute("SELECT * FROM product");
@@ -34,7 +34,11 @@ const getProductById = async (productId) => {
     low_price: rows[0].low_price,
     low_weight: rows[0].low_weight,
     country: rows[0].country,
-    additional_pictures: rows[0].additional_pictures ? rows[0].additional_pictures.split(',').map(picture => IMAGE_BASE_URL + picture) : []
+    additional_pictures: rows[0].additional_pictures
+      ? rows[0].additional_pictures
+          .split(",")
+          .map((picture) => API_BASE_URL + picture)
+      : [],
   };
   return product;
 };
