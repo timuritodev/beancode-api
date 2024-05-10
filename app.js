@@ -22,7 +22,7 @@ const NotFoundError = require("./errors/NotFoundError");
 const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/errorHandler");
 const rateLimiter = require("./middlewares/rateLimit");
-const { apiProxyDeliver, apiProxyStatus, apiProxyPay } = require("./proxy");
+const { apiProxyDeliver, apiProxyStatus, apiProxyPay, apiProxyDeliverAuth } = require("./proxy");
 const session = require("express-session");
 const MySQLStore = require("express-mysql-session")(session);
 const { pool } = require("./utils/utils");
@@ -86,6 +86,8 @@ app.use("/api/api-deliver", apiProxyDeliver);
 app.use("/api/api-status", apiProxyStatus);
 
 app.use("/api/api-pay", apiProxyPay);
+
+app.use("/api/api-auth", apiProxyDeliverAuth);
 
 app.use(productRoutes);
 
