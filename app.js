@@ -81,7 +81,7 @@ app.get("/crash-test", () => {
   }, 0);
 });
 
-app.use("/api/api-deliver", apiProxyDeliver);
+app.use("/api/api-delivery", apiProxyDeliver);
 
 app.use("/api/api-status", apiProxyStatus);
 
