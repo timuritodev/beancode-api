@@ -39,13 +39,48 @@ const apiProxyDeliverAuth = createProxyMiddleware(
 
 const proxyOptionsDeliver = {
   target: "https://api.edu.cdek.ru/v2/orders",
-  //   target: 'https://api.cdek.ru/v2/orders',
   changeOrigin: true,
   pathRewrite: {
     "^/api/api-delivery": "",
   },
-  timeout: 30000, 
-      proxyTimeout: 30000
+  timeout: 60000, // Увеличенное время ожидания
+  proxyTimeout: 60000,
+  onProxyReq: (proxyReq, req, res) => {
+    console.log('Order request:', {
+      method: req.method,
+      url: proxyReq.path,
+      headers: req.headers,
+      body: JSON.stringify(req.body), // Преобразование тела в строку для логирования
+    });
+
+    if (req.body) {
+      let bodyData = JSON.stringify(req.body);
+      // Установите Content-Length для тела запроса
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      // Запишите тело запроса
+      proxyReq.write(bodyData);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    let data = '';
+    proxyRes.on('data', (chunk) => {
+      data += chunk;
+    });
+    proxyRes.on('end', () => {
+      console.log('Order response:', {
+        statusCode: proxyRes.statusCode,
+        headers: proxyRes.headers,
+        body: data,
+      });
+    });
+  },
+  onError: (err, req, res) => {
+    console.error('Proxy error:', err);
+    res.writeHead(500, {
+      'Content-Type': 'text/plain'
+    });
+    res.end('Something went wrong. And we are reporting a custom error message.');
+  }
 };
 
 const apiProxyDeliver = createProxyMiddleware(
