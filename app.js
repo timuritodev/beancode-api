@@ -22,7 +22,7 @@ const NotFoundError = require("./errors/NotFoundError");
 const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/errorHandler");
 const rateLimiter = require("./middlewares/rateLimit");
-const { apiProxyDeliver, apiProxyStatus, apiProxyPay, apiProxyDeliverAuth } = require("./proxy");
+const { apiProxyDeliver, apiProxyStatus, apiProxyPay, apiProxyDeliverAuth, apiProxyDeliverPrice, apiProxyCountries } = require("./proxy");
 const session = require("express-session");
 const MySQLStore = require("express-mysql-session")(session);
 const { pool } = require("./utils/utils");
@@ -59,8 +59,9 @@ app.use(
 
 app.use(
   cors({
-    origin: "https://beancode.ru",
+    // origin: "https://beancode.ru",
     // origin: "http://localhost:5173",
+    origin: "http://localhost:3000",
     credentials: true,
     allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
   })
@@ -88,6 +89,10 @@ app.use("/api/api-status", apiProxyStatus);
 app.use("/api/api-pay", apiProxyPay);
 
 app.use("/api/api-auth", apiProxyDeliverAuth);
+
+app.use("/api/api-calculate", apiProxyDeliverPrice);
+
+app.use("/api/api-countries", apiProxyCountries);
 
 app.use(productRoutes);
 
