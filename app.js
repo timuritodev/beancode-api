@@ -18,6 +18,7 @@ const subcriptionRoutes = require("./routes/subscriptions");
 const wholesaleRoutes = require("./routes/wholesales");
 const promoRoutes = require("./routes/promos");
 const sessionCartRoutes = require("./routes/session_carts");
+const machineRoutes = require("./routes/machines");
 const NotFoundError = require("./errors/NotFoundError");
 const { requestLogger, errorLogger } = require("./middlewares/logger");
 const errorHandler = require("./middlewares/errorHandler");
@@ -113,6 +114,8 @@ app.use(wholesaleRoutes);
 app.use(promoRoutes);
 
 app.use(sessionCartRoutes);
+
+app.use(machineRoutes);
 
 app.use((req, res, next) => next(new NotFoundError("Страница не найдена")));
 app.use(errorLogger);
