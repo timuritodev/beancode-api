@@ -56,8 +56,22 @@ const getOrdersByUserId = async (userId) => {
   return rows;
 };
 
+const getOrderByOrderNumber = async (orderNumber) => {
+  try {
+    const [rows, fields] = await pool.execute(
+      "SELECT * FROM orders WHERE orderNumber = ? LIMIT 1",
+      [orderNumber]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    console.error("Error in getOrderByOrderNumber:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   getAllOrders,
   createOrder,
   getOrdersByUserId,
+  getOrderByOrderNumber,
 };
