@@ -3,7 +3,7 @@ const orderModel = require("../models/order");
 
 const router = express.Router();
 
-router.post("/order/create", async (req, res) => {
+router.post("/api/order/create", async (req, res) => {
   const orderData = req.body;
   try {
     const orderId = await orderModel.createOrder(orderData);
@@ -19,7 +19,7 @@ router.post("/order/create", async (req, res) => {
   }
 });
 
-router.get("/order/:id", async (req, res) => {
+router.get("/api/order/:id", async (req, res) => {
   const userId = req.params.id;
 
   try {

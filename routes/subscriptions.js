@@ -3,7 +3,7 @@ const subcribeModel = require("../models/subscription");
 
 const router = express.Router();
 
-router.post("/subscription/add", async (req, res) => {
+router.post("/api/subscription/add", async (req, res) => {
   const { email } = req.body;
 
   try {

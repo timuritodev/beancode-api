@@ -1,8 +1,8 @@
 const { pool } = require("../utils/utils");
 
-const createOrder = async (orderData) => {
+const createOrderBackup = async (orderData) => {
   const {
-    userId,
+    userId = 0,
     phone,
     email,
     address,
@@ -17,7 +17,7 @@ const createOrder = async (orderData) => {
   try {
     const [rows, fields] = await pool.execute(
       `
-        INSERT INTO orders (user_id, phone, email, address, city, sum, product_quantity, products_info, orderNumber, date_order)
+        INSERT INTO orderbackups (user_id, phone, email, address, city, sum, product_quantity, products_info, orderNumber, date_order)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
@@ -43,21 +43,6 @@ const createOrder = async (orderData) => {
   }
 };
 
-const getAllOrders = async () => {
-  const [rows, fields] = await pool.execute("SELECT * FROM orders");
-  return rows;
-};
-
-const getOrdersByUserId = async (userId) => {
-  const [rows, fields] = await pool.execute(
-    "SELECT * FROM orders WHERE user_id = ?",
-    [userId]
-  );
-  return rows;
-};
-
 module.exports = {
-  getAllOrders,
-  createOrder,
-  getOrdersByUserId,
+  createOrderBackup,
 };

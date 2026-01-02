@@ -1,14 +1,14 @@
 const express = require("express");
-const cartModel = require("../models/cart");
+const sessionCartModel = require("../models/session_cart");
 const productModel = require("../models/product");
 
 const router = express.Router();
 
-router.get("/api/cart/:id", async (req, res) => {
-  const userId = req.params.id;
-
+router.get("/api/session-cart", async (req, res) => { 
+  const sessionId = req.sessionID;
+  console.log(sessionId, 'get', Date.now())
   try {
-    const cart = await cartModel.getCartByUserId(userId);
+    const cart = await sessionCartModel.getSessionCartByUserId(sessionId);
     if (!cart) {
       res.status(404).json({ error: "Cart not found" });
       return;
@@ -16,38 +16,34 @@ router.get("/api/cart/:id", async (req, res) => {
 
     res.json(cart);
   } catch (error) {
-    console.error("Error fetching cart by ID:", 222, error);
+    console.error("Error fetching cart by ID:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-router.post("/api/cart/add", async (req, res) => {
-  const { userId, productId, product_price, product_weight } = req.body;
+router.post("/api/session-cart/add", async (req, res) => {
+  const { productId, product_price, product_weight } = req.body;
+  const sessionId = req.sessionID; // Вытаскиваем ID сессии
+
+  console.log(sessionId, 'add', Date.now())
   const product = await productModel.getProductById(productId);
   try {
     // Вызываем метод модели корзины для добавления товара
-    const result = await cartModel.addToCart(
-      userId,
+    const result = await sessionCartModel.addToSessionCart(
+      sessionId,
       productId,
       product_price,
       product_weight
     );
 
     if (result.success) {
-      // res.json({ product });
       res.json({
         id: product.id,
         title: product.title,
-        // description: product.description,
         price: product_price,
         weight: product_weight,
         v_picture: product.v_picture,
         h_picture: product.h_picture,
-        // acidity: product.low_weight,
-        // density: product.low_weight,
-        // big_description: product.low_weight,
-        // low_price: product.low_weight,
-        // low_weight: product.low_weight,
       });
 
       res.status(201);
@@ -60,19 +56,19 @@ router.post("/api/cart/add", async (req, res) => {
   }
 });
 
-router.post("/api/cart/remove", async (req, res) => {
-  const { userId, productId, product_price, product_weight } = req.body;
-
+router.post("/api/session-cart/remove", async (req, res) => {
+  const { productId, product_price, product_weight } = req.body;
+  const sessionId = req.sessionID; // Вытаскиваем ID сессии
+  console.log(sessionId, 'delete', Date.now())
   try {
-    const result = await cartModel.removeFromCart(
-      userId,
+    const result = await sessionCartModel.removeFromSessionCart(
+      sessionId,
       productId,
       product_price,
       product_weight
     );
 
     if (result.success) {
-      // res.json({ productId });
       res.json({
         id: productId,
         price: product_price,
@@ -88,11 +84,11 @@ router.post("/api/cart/remove", async (req, res) => {
   }
 });
 
-router.delete("/api/cart/:userId", async (req, res) => {
-  const userId = req.params.userId;
+router.delete("/api/session-cart/clear", async (req, res) => {
+  const sessionId = req.sessionID; // Вытаскиваем ID сессии
 
   try {
-    const result = await cartModel.clearCartByUserId(userId);
+    const result = await sessionCartModel.clearSessionCartByUserId(sessionId);
 
     if (result.success) {
       res.json({ message: "Products deleted successfully" });

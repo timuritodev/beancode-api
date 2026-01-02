@@ -3,7 +3,7 @@ const productModel = require("../models/product");
 
 const router = express.Router();
 
-router.get("/products", async (req, res) => {
+router.get("/api/products", async (req, res) => {
   try {
     const products = await productModel.getAllProducts();
     res.json(products);
@@ -13,7 +13,7 @@ router.get("/products", async (req, res) => {
   }
 });
 
-router.get("/products/:id", async (req, res) => {
+router.get("/api/products/:id", async (req, res) => {
   const productId = req.params.id;
 
   try {
