@@ -67,9 +67,7 @@ app.use(
 
 app.use(
 	cors({
-		origin: 'https://beancode.ru',
-		// origin: "http://localhost:5173",
-		// origin: 'http://localhost:3000',
+		origin: ['https://beancode.ru', 'http://localhost:3000'],
 		credentials: true,
 		allowedHeaders: [
 			'Origin',
