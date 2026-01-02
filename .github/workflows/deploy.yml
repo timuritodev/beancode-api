@@ -26,6 +26,7 @@ jobs:
           script: |
             set -e
             cd /home/beancode/beancode-api
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             npm ci
             pm2 restart app
