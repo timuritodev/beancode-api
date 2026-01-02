@@ -43,6 +43,20 @@ const createOrderBackup = async (orderData) => {
   }
 };
 
+const getOrderBackupByOrderNumber = async (orderNumber) => {
+  try {
+    const [rows, fields] = await pool.execute(
+      'SELECT * FROM orderbackups WHERE orderNumber = ? ORDER BY id DESC LIMIT 1',
+      [orderNumber]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    console.error('Error in getOrderBackupByOrderNumber:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   createOrderBackup,
+  getOrderBackupByOrderNumber,
 };
