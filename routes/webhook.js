@@ -13,6 +13,17 @@ router.use(bodyParser.urlencoded({ extended: true }));
 // Поддерживаем как GET, так и POST запросы
 const handleCallback = async (req, res) => {
 	try {
+		// Функция для декодирования URL-encoded строк
+		const decodeParam = (param) => {
+			if (!param) return param;
+			try {
+				return decodeURIComponent(String(param));
+			} catch (e) {
+				console.warn('Failed to decode param:', param, e);
+				return param;
+			}
+		};
+
 		// Получаем параметры из query (GET) или body (POST)
 		const orderNumber = req.query.orderNumber || req.body.orderNumber;
 		const mdOrder = req.query.mdOrder || req.body.mdOrder;
@@ -20,11 +31,13 @@ const handleCallback = async (req, res) => {
 		const status = req.query.status || req.body.status;
 		const checksum = req.query.checksum || req.body.checksum;
 
-		// Дополнительные параметры из callback
-		const orderDescription =
+		// Дополнительные параметры из callback (декодируем URL-encoded значения)
+		const orderDescriptionRaw =
 			req.query.orderDescription || req.body.orderDescription;
+		const orderDescription = decodeParam(orderDescriptionRaw);
 		const amount = req.query.amount || req.body.amount;
-		const date = req.query.date || req.body.date;
+		const dateRaw = req.query.date || req.body.date;
+		const date = decodeParam(dateRaw);
 		const alfaPayOwnCard = req.query.alfaPayOwnCard || req.body.alfaPayOwnCard;
 
 		console.log('Callback received:', {
@@ -41,9 +54,11 @@ const handleCallback = async (req, res) => {
 
 		// Логируем все дополнительные параметры
 		console.log('📦 Additional callback parameters:');
-		console.log('  orderDescription:', orderDescription);
+		console.log('  orderDescription (raw):', orderDescriptionRaw);
+		console.log('  orderDescription (decoded):', orderDescription);
 		console.log('  amount:', amount);
-		console.log('  date:', date);
+		console.log('  date (raw):', dateRaw);
+		console.log('  date (decoded):', date);
 		console.log('  alfaPayOwnCard:', alfaPayOwnCard);
 
 		// Проверяем обязательные параметры
@@ -70,55 +85,73 @@ const handleCallback = async (req, res) => {
 		}
 
 		// Собираем все параметры из query и body
-		const allParams = {
+		const allParamsRaw = {
 			...(req.query || {}),
 			...(req.body || {}),
 		};
 
 		// Удаляем checksum и sign_alias из параметров для проверки
-		delete allParams.checksum;
-		delete allParams.sign_alias;
+		delete allParamsRaw.checksum;
+		delete allParamsRaw.sign_alias;
+
+		// Пробуем оба варианта: с декодированием и без
+		// Вариант 1: Декодируем URL-encoded параметры
+		const allParamsDecoded = {};
+		for (const key in allParamsRaw) {
+			allParamsDecoded[key] = decodeParam(allParamsRaw[key]);
+		}
+
+		// Вариант 2: Без декодирования (используем как есть)
+		const allParamsEncoded = { ...allParamsRaw };
 
 		console.log(
-			'📋 All callback parameters (without checksum and sign_alias):',
-			allParams
+			'📋 All callback parameters (without checksum and sign_alias, encoded):',
+			allParamsEncoded
+		);
+		console.log(
+			'📋 All callback parameters (without checksum and sign_alias, decoded):',
+			allParamsDecoded
 		);
 		console.log('📋 Received checksum:', checksum);
 
-		// Сортируем параметры по именам в алфавитном порядке (по возрастанию)
-		const sortedKeys = Object.keys(allParams).sort();
+		// Проверяем оба варианта
+		const checkSignature = (params, label) => {
+			const sortedKeys = Object.keys(params).sort();
+			const dataString = sortedKeys
+				.map((key) => `${key};${params[key] || ''};`)
+				.join('');
 
-		// Формируем строку в формате: имя1;значение1;имя2;значение2;...;имяN;значениеN;
-		// Обратите внимание: строка заканчивается точкой с запятой!
-		const dataString = sortedKeys
-			.map((key) => `${key};${allParams[key] || ''};`)
-			.join('');
+			const calculatedChecksum = crypto
+				.createHmac('sha256', callbackToken)
+				.update(dataString)
+				.digest('hex')
+				.toUpperCase();
 
-		console.log('📝 Sorted parameter keys:', sortedKeys);
-		console.log('📝 Generated data string:', dataString);
+			const receivedChecksumUpper = checksum.toUpperCase();
+			const match = receivedChecksumUpper === calculatedChecksum;
 
-		// Вычисляем HMAC-SHA256
-		const calculatedChecksum = crypto
-			.createHmac('sha256', callbackToken)
-			.update(dataString)
-			.digest('hex')
-			.toUpperCase();
+			console.log(`🔐 Signature verification (${label}):`);
+			console.log('  Sorted keys:', sortedKeys);
+			console.log('  Data string:', dataString);
+			console.log('  Calculated checksum:', calculatedChecksum);
+			console.log('  Received checksum:', receivedChecksumUpper);
+			console.log('  Match:', match ? '✅ YES' : '❌ NO');
 
-		const receivedChecksumUpper = checksum.toUpperCase();
+			return { match, dataString, calculatedChecksum, sortedKeys };
+		};
 
-		console.log('🔐 Signature verification:');
-		console.log('  Data string:', dataString);
-		console.log('  Calculated checksum:', calculatedChecksum);
-		console.log('  Received checksum:', receivedChecksumUpper);
-		console.log(
-			'  Match:',
-			receivedChecksumUpper === calculatedChecksum ? '✅ YES' : '❌ NO'
-		);
+		const resultEncoded = checkSignature(allParamsEncoded, 'encoded');
+		const resultDecoded = checkSignature(allParamsDecoded, 'decoded');
 
-		const isValid = receivedChecksumUpper === calculatedChecksum;
-		const matchedVariant = isValid
-			? 'Correct format (name1;value1;name2;value2;...;nameN;valueN;)'
+		const isValid = resultEncoded.match || resultDecoded.match;
+		const matchedVariant = resultEncoded.match
+			? 'Encoded format'
+			: resultDecoded.match
+			? 'Decoded format'
 			: null;
+
+		// Используем декодированные параметры для дальнейшей обработки
+		const allParams = allParamsDecoded;
 
 		if (!isValid) {
 			console.error('❌ SIGNATURE VERIFICATION FAILED');
