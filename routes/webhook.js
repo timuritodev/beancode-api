@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
+const url = require('url');
+const querystring = require('querystring');
 const orderModel = require('../models/order');
 const orderBackupModel = require('../models/orderBackup');
 
@@ -87,19 +89,96 @@ const handleCallback = async (req, res) => {
 			return res.status(400).send('Signature verification failed');
 		}
 
-		// Собираем все параметры из query и body
-		const allParamsRaw = {
-			...(req.query || {}),
-			...(req.body || {}),
-		};
+		// Получаем параметры в оригинальном виде (encoded) из URL для проверки подписи
+		// Express автоматически декодирует query параметры, поэтому парсим URL вручную
+		let allParamsForSignature = {};
+
+		console.log('🔍 Debug request info:');
+		console.log('  Method:', req.method);
+		console.log('  originalUrl:', req.originalUrl);
+		console.log('  url:', req.url);
+		console.log('  req.query:', req.query);
+		console.log('  req.body:', req.body);
+
+		// Для GET запросов получаем параметры из URL (encoded)
+		if (req.method === 'GET' && req.originalUrl) {
+			const parsedUrl = url.parse(req.originalUrl, false);
+			if (parsedUrl.query) {
+				console.log('  Raw query string (GET):', parsedUrl.query);
+				// Парсим query string вручную, сохраняя encoded значения
+				parsedUrl.query.split('&').forEach((pair) => {
+					const equalIndex = pair.indexOf('=');
+					if (equalIndex > 0) {
+						const key = decodeURIComponent(pair.substring(0, equalIndex));
+						const value = pair.substring(equalIndex + 1); // Сохраняем значение как есть (encoded)
+						allParamsForSignature[key] = value;
+					}
+				});
+			}
+		}
+
+		// Для POST запросов параметры могут быть в body или query
+		// Пробуем получить из URL если есть query параметры
+		if (req.method === 'POST') {
+			// Сначала пробуем получить из URL (если есть query параметры в URL)
+			if (req.originalUrl && req.originalUrl.includes('?')) {
+				const parsedUrl = url.parse(req.originalUrl, false);
+				if (parsedUrl.query) {
+					console.log('  Raw query string (POST):', parsedUrl.query);
+					parsedUrl.query.split('&').forEach((pair) => {
+						const equalIndex = pair.indexOf('=');
+						if (equalIndex > 0) {
+							const key = decodeURIComponent(pair.substring(0, equalIndex));
+							const value = pair.substring(equalIndex + 1);
+							allParamsForSignature[key] = value;
+						}
+					});
+				}
+			}
+
+			// Добавляем параметры из body (они уже декодированы bodyParser)
+			// Для POST body параметры уже декодированы, но платежный шлюз может формировать подпись от них
+			if (req.body && Object.keys(req.body).length > 0) {
+				allParamsForSignature = { ...allParamsForSignature, ...req.body };
+			}
+
+			// Добавляем параметры из query если есть
+			if (req.query && Object.keys(req.query).length > 0) {
+				allParamsForSignature = { ...allParamsForSignature, ...req.query };
+			}
+		}
+
+		// Если не удалось получить из URL, используем req.query и req.body как fallback
+		if (Object.keys(allParamsForSignature).length === 0) {
+			allParamsForSignature = {
+				...(req.query || {}),
+				...(req.body || {}),
+			};
+		}
+
+		console.log(
+			'  Parsed params for signature (before removing checksum):',
+			allParamsForSignature
+		);
+
+		// Убеждаемся, что все дополнительные параметры включены
+		// (на случай, если они не попали в allParamsForSignature)
+		if (orderDescriptionRaw && !allParamsForSignature.orderDescription) {
+			allParamsForSignature.orderDescription = orderDescriptionRaw;
+		}
+		if (amount && !allParamsForSignature.amount) {
+			allParamsForSignature.amount = amount;
+		}
+		if (dateRaw && !allParamsForSignature.date) {
+			allParamsForSignature.date = dateRaw;
+		}
+		if (alfaPayOwnCard && !allParamsForSignature.alfaPayOwnCard) {
+			allParamsForSignature.alfaPayOwnCard = alfaPayOwnCard;
+		}
 
 		// Удаляем checksum и sign_alias из параметров для проверки
-		delete allParamsRaw.checksum;
-		delete allParamsRaw.sign_alias;
-
-		// Для проверки подписи используем параметры как есть (encoded)
-		// Платежный шлюз формирует подпись от параметров в том виде, в котором они приходят в URL
-		const allParamsForSignature = { ...allParamsRaw };
+		delete allParamsForSignature.checksum;
+		delete allParamsForSignature.sign_alias;
 
 		console.log(
 			'📋 All callback parameters (without checksum and sign_alias, for signature):',
@@ -107,45 +186,65 @@ const handleCallback = async (req, res) => {
 		);
 		console.log('📋 Received checksum:', checksum);
 
-		// Сортируем параметры по именам в алфавитном порядке (по возрастанию)
-		const sortedKeys = Object.keys(allParamsForSignature).sort();
+		// Создаем два варианта параметров для проверки:
+		// 1. allParamsEncoded - параметры как есть (encoded, если были в URL)
+		// 2. allParamsDecoded - все параметры полностью декодированы
+		const allParamsEncoded = { ...allParamsForSignature };
+		const allParamsDecoded = {};
+		for (const key in allParamsForSignature) {
+			allParamsDecoded[key] = decodeParam(allParamsForSignature[key]);
+		}
 
-		// Формируем строку в формате: имя1;значение1;имя2;значение2;...;имяN;значениеN;
-		// Обратите внимание: строка заканчивается точкой с запятой!
-		const dataString = sortedKeys
-			.map((key) => `${key};${allParamsForSignature[key] || ''};`)
-			.join('');
+		// Функция для проверки подписи
+		const checkSignature = (params, variantName) => {
+			const sortedKeys = Object.keys(params).sort();
+			const dataString = sortedKeys
+				.map((key) => `${key};${params[key] || ''};`)
+				.join('');
+			const calculatedChecksum = crypto
+				.createHmac('sha256', callbackToken)
+				.update(dataString)
+				.digest('hex')
+				.toUpperCase();
+			const receivedChecksumUpper = checksum ? checksum.toUpperCase() : '';
 
-		console.log('📝 Sorted parameter keys:', sortedKeys);
-		console.log('📝 Generated data string:', dataString);
+			console.log(`🔐 Signature verification (${variantName}):`);
+			console.log('  Sorted keys:', sortedKeys);
+			console.log('  Data string:', dataString);
+			console.log('  Calculated checksum:', calculatedChecksum);
+			console.log('  Received checksum:', receivedChecksumUpper);
+			console.log(
+				'  Match:',
+				calculatedChecksum === receivedChecksumUpper ? '✅ YES' : '❌ NO'
+			);
 
-		// Вычисляем HMAC-SHA256
-		const calculatedChecksum = crypto
-			.createHmac('sha256', callbackToken)
-			.update(dataString)
-			.digest('hex')
-			.toUpperCase();
+			return {
+				isValid: calculatedChecksum === receivedChecksumUpper,
+				variant: variantName,
+			};
+		};
 
-		const receivedChecksumUpper = checksum ? checksum.toUpperCase() : '';
-
-		console.log('🔐 Signature verification:');
-		console.log('  Data string:', dataString);
-		console.log('  Calculated checksum:', calculatedChecksum);
-		console.log('  Received checksum:', receivedChecksumUpper);
-		console.log(
-			'  Match:',
-			receivedChecksumUpper === calculatedChecksum ? '✅ YES' : '❌ NO'
+		// Проверяем оба варианта
+		const resultEncoded = checkSignature(
+			allParamsEncoded,
+			'Encoded (as received)'
+		);
+		const resultDecoded = checkSignature(
+			allParamsDecoded,
+			'Decoded (fully decoded)'
 		);
 
-		const isValid = receivedChecksumUpper === calculatedChecksum;
-		const matchedVariant = isValid
-			? 'Correct format (name1;value1;name2;value2;...;nameN;valueN;)'
+		const isValid = resultEncoded.isValid || resultDecoded.isValid;
+		const matchedVariant = resultEncoded.isValid
+			? resultEncoded.variant
+			: resultDecoded.isValid
+			? resultDecoded.variant
 			: null;
 
 		// Для дальнейшей обработки декодируем параметры
 		const allParams = {};
-		for (const key in allParamsRaw) {
-			allParams[key] = decodeParam(allParamsRaw[key]);
+		for (const key in allParamsForSignature) {
+			allParams[key] = decodeParam(allParamsForSignature[key]);
 		}
 
 		if (!isValid) {
