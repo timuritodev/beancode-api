@@ -51,113 +51,68 @@ const handleCallback = async (req, res) => {
 			return res.status(400).send('Signature verification failed');
 		}
 
-		console.log('📋 Input parameters:', {
-			mdOrder: mdOrder || '(empty)',
-			orderNumber,
-			operation,
-			status,
-			receivedChecksum: checksum,
-			callbackTokenLength: callbackToken ? callbackToken.length : 0,
-			callbackTokenPreview: callbackToken
-				? `${callbackToken.substring(0, 4)}...${callbackToken.substring(
-						callbackToken.length - 4
-				  )}`
-				: 'NOT SET',
-		});
+		// Собираем все параметры из query и body
+		const allParams = {
+			...(req.query || {}),
+			...(req.body || {}),
+		};
 
-		// Вариант 1: С разделителем точка с запятой
-		const dataToVerify1 = `${
-			mdOrder || ''
-		};${orderNumber};${operation};${status}`;
-		const calculatedChecksum1 = crypto
+		// Удаляем checksum и sign_alias из параметров для проверки
+		delete allParams.checksum;
+		delete allParams.sign_alias;
+
+		console.log(
+			'📋 All callback parameters (without checksum and sign_alias):',
+			allParams
+		);
+		console.log('📋 Received checksum:', checksum);
+
+		// Сортируем параметры по именам в алфавитном порядке (по возрастанию)
+		const sortedKeys = Object.keys(allParams).sort();
+
+		// Формируем строку в формате: имя1;значение1;имя2;значение2;...;имяN;значениеN;
+		// Обратите внимание: строка заканчивается точкой с запятой!
+		const dataString = sortedKeys
+			.map((key) => `${key};${allParams[key] || ''};`)
+			.join('');
+
+		console.log('📝 Sorted parameter keys:', sortedKeys);
+		console.log('📝 Generated data string:', dataString);
+
+		// Вычисляем HMAC-SHA256
+		const calculatedChecksum = crypto
 			.createHmac('sha256', callbackToken)
-			.update(dataToVerify1)
+			.update(dataString)
 			.digest('hex')
 			.toUpperCase();
 
-		console.log('🔐 Variant 1 (with semicolon separator):');
-		console.log('  Data string:', dataToVerify1);
-		console.log('  Calculated checksum:', calculatedChecksum1);
-		console.log('  Received checksum:', checksum.toUpperCase());
+		const receivedChecksumUpper = checksum.toUpperCase();
+
+		console.log('🔐 Signature verification:');
+		console.log('  Data string:', dataString);
+		console.log('  Calculated checksum:', calculatedChecksum);
+		console.log('  Received checksum:', receivedChecksumUpper);
 		console.log(
 			'  Match:',
-			checksum.toUpperCase() === calculatedChecksum1 ? '✅ YES' : '❌ NO'
+			receivedChecksumUpper === calculatedChecksum ? '✅ YES' : '❌ NO'
 		);
 
-		// Вариант 2: Без разделителей
-		const dataToVerify2 = `${mdOrder || ''}${orderNumber}${operation}${status}`;
-		const calculatedChecksum2 = crypto
-			.createHmac('sha256', callbackToken)
-			.update(dataToVerify2)
-			.digest('hex')
-			.toUpperCase();
-
-		console.log('🔐 Variant 2 (no separator):');
-		console.log('  Data string:', dataToVerify2);
-		console.log('  Calculated checksum:', calculatedChecksum2);
-		console.log('  Received checksum:', checksum.toUpperCase());
-		console.log(
-			'  Match:',
-			checksum.toUpperCase() === calculatedChecksum2 ? '✅ YES' : '❌ NO'
-		);
-
-		// Вариант 3: Порядок orderNumber, mdOrder, operation, status
-		const dataToVerify3 = `${orderNumber};${
-			mdOrder || ''
-		};${operation};${status}`;
-		const calculatedChecksum3 = crypto
-			.createHmac('sha256', callbackToken)
-			.update(dataToVerify3)
-			.digest('hex')
-			.toUpperCase();
-
-		console.log('🔐 Variant 3 (orderNumber first, with semicolon):');
-		console.log('  Data string:', dataToVerify3);
-		console.log('  Calculated checksum:', calculatedChecksum3);
-		console.log('  Received checksum:', checksum.toUpperCase());
-		console.log(
-			'  Match:',
-			checksum.toUpperCase() === calculatedChecksum3 ? '✅ YES' : '❌ NO'
-		);
-
-		// Вариант 4: Порядок orderNumber, mdOrder, operation, status без разделителей
-		const dataToVerify4 = `${orderNumber}${mdOrder || ''}${operation}${status}`;
-		const calculatedChecksum4 = crypto
-			.createHmac('sha256', callbackToken)
-			.update(dataToVerify4)
-			.digest('hex')
-			.toUpperCase();
-
-		console.log('🔐 Variant 4 (orderNumber first, no separator):');
-		console.log('  Data string:', dataToVerify4);
-		console.log('  Calculated checksum:', calculatedChecksum4);
-		console.log('  Received checksum:', checksum.toUpperCase());
-		console.log(
-			'  Match:',
-			checksum.toUpperCase() === calculatedChecksum4 ? '✅ YES' : '❌ NO'
-		);
-
-		// Проверяем все варианты
-		const isValid =
-			checksum.toUpperCase() === calculatedChecksum1 ||
-			checksum.toUpperCase() === calculatedChecksum2 ||
-			checksum.toUpperCase() === calculatedChecksum3 ||
-			checksum.toUpperCase() === calculatedChecksum4;
+		const isValid = receivedChecksumUpper === calculatedChecksum;
+		const matchedVariant = isValid
+			? 'Correct format (name1;value1;name2;value2;...;nameN;valueN;)'
+			: null;
 
 		if (!isValid) {
 			console.error('❌ SIGNATURE VERIFICATION FAILED');
-			console.error('All calculated checksums:', {
-				variant1: calculatedChecksum1,
-				variant2: calculatedChecksum2,
-				variant3: calculatedChecksum3,
-				variant4: calculatedChecksum4,
-			});
-			console.error('Received checksum:', checksum.toUpperCase());
+			console.error('Received checksum:', receivedChecksumUpper);
+			console.error('Tried all variants, none matched');
 			console.log('=== SIGNATURE VERIFICATION END (FAILED) ===');
 			return res.status(400).send('Invalid signature');
 		}
 
-		console.log('✅ SIGNATURE VERIFICATION SUCCESS');
+		console.log(
+			`✅ SIGNATURE VERIFICATION SUCCESS (matched: ${matchedVariant})`
+		);
 		console.log('=== SIGNATURE VERIFICATION END ===');
 
 		// Обрабатываем только успешное списание средств
