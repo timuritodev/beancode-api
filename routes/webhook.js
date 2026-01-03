@@ -4,7 +4,6 @@ const crypto = require('crypto');
 const url = require('url');
 const querystring = require('querystring');
 const orderModel = require('../models/order');
-const orderBackupModel = require('../models/orderBackup');
 
 const router = express.Router();
 
@@ -270,6 +269,30 @@ const handleCallback = async (req, res) => {
 				return res.status(200).send('OK');
 			}
 
+			// Функция для преобразования даты из формата DD.MM.YYYY HH:MM:SS в YYYY-MM-DD HH:MM:SS
+			const formatDateForMySQL = (dateStr) => {
+				if (!dateStr) {
+					const defaultDate = new Date().toISOString().split('T')[0];
+					console.log('📅 No date provided, using default:', defaultDate);
+					return defaultDate;
+				}
+				// Формат: "03.01.2026 19:12:47" -> "2026-01-03 19:12:47"
+				const match = dateStr.match(
+					/^(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/
+				);
+				if (match) {
+					const [, day, month, year, hour, minute, second] = match;
+					const formattedDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+					console.log(`📅 Date converted: "${dateStr}" -> "${formattedDate}"`);
+					return formattedDate;
+				}
+				// Если формат не совпадает, возвращаем текущую дату
+				console.warn(
+					`⚠️  Unexpected date format: ${dateStr}, using current date`
+				);
+				return new Date().toISOString().split('T')[0];
+			};
+
 			// Парсим orderDescription для извлечения данных заказа
 			// Формат: "Номер заказа - X, Информация о заказе(id, название, вес) - Y, Кол-во товаров - Z, Город - CITY, Адрес - ADDRESS, Email - EMAIL, Телефон - PHONE, ФИО - NAME"
 			let parsedData = {
@@ -282,7 +305,7 @@ const handleCallback = async (req, res) => {
 				product_quantity: 0,
 				products_info: '',
 				orderNumber: orderNumber,
-				date_order: date || new Date().toISOString().split('T')[0],
+				date_order: formatDateForMySQL(date),
 			};
 
 			if (orderDescription) {
@@ -315,40 +338,31 @@ const handleCallback = async (req, res) => {
 
 			// Используем amount из callback (в копейках, переводим в рубли)
 			if (amount) {
-				parsedData.sum = parseInt(amount, 10) / 100;
+				const amountInKopecks = parseInt(amount, 10);
+				parsedData.sum = amountInKopecks / 100;
+				console.log(
+					`💰 Amount converted: ${amountInKopecks} kopecks = ${parsedData.sum} rubles`
+				);
+			} else {
+				console.warn('⚠️  No amount provided in callback');
 			}
 
-			// Если данных из orderDescription недостаточно, пытаемся получить из backup (fallback)
-			if (!parsedData.email && !parsedData.phone) {
-				console.log(
-					'⚠️  Insufficient data from orderDescription, trying backup...'
-				);
-				const orderBackup = await orderBackupModel.getOrderBackupByOrderNumber(
-					orderNumber
-				);
-
-				if (orderBackup) {
-					parsedData = {
-						userId: orderBackup.user_id,
-						phone: parsedData.phone || orderBackup.phone,
-						email: parsedData.email || orderBackup.email,
-						address: parsedData.address || orderBackup.address,
-						city: parsedData.city || orderBackup.city,
-						sum: parsedData.sum || orderBackup.sum,
-						product_quantity:
-							parsedData.product_quantity || orderBackup.product_quantity,
-						products_info:
-							parsedData.products_info || orderBackup.products_info,
-						orderNumber: orderBackup.orderNumber,
-						date_order: parsedData.date_order || orderBackup.date_order,
-					};
-					console.log('📋 Using backup data:', parsedData);
-				} else {
-					console.error(
-						`Order backup not found for orderNumber: ${orderNumber}`
-					);
-					return res.status(200).send('OK');
-				}
+			// Проверяем, что все необходимые данные есть
+			if (
+				!parsedData.email ||
+				!parsedData.phone ||
+				!parsedData.sum ||
+				!parsedData.city ||
+				!parsedData.address
+			) {
+				console.error('❌ Insufficient data from callback:');
+				console.error('  email:', parsedData.email || 'MISSING');
+				console.error('  phone:', parsedData.phone || 'MISSING');
+				console.error('  sum:', parsedData.sum || 'MISSING');
+				console.error('  city:', parsedData.city || 'MISSING');
+				console.error('  address:', parsedData.address || 'MISSING');
+				console.error('  orderDescription:', orderDescription || 'MISSING');
+				return res.status(400).send('Insufficient data in callback');
 			}
 
 			// Создаем основной заказ
