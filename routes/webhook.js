@@ -20,13 +20,31 @@ const handleCallback = async (req, res) => {
 		const status = req.query.status || req.body.status;
 		const checksum = req.query.checksum || req.body.checksum;
 
+		// Дополнительные параметры из callback
+		const orderDescription =
+			req.query.orderDescription || req.body.orderDescription;
+		const amount = req.query.amount || req.body.amount;
+		const date = req.query.date || req.body.date;
+		const alfaPayOwnCard = req.query.alfaPayOwnCard || req.body.alfaPayOwnCard;
+
 		console.log('Callback received:', {
 			orderNumber,
 			mdOrder,
 			operation,
 			status,
 			checksum,
+			orderDescription,
+			amount,
+			date,
+			alfaPayOwnCard,
 		});
+
+		// Логируем все дополнительные параметры
+		console.log('📦 Additional callback parameters:');
+		console.log('  orderDescription:', orderDescription);
+		console.log('  amount:', amount);
+		console.log('  date:', date);
+		console.log('  alfaPayOwnCard:', alfaPayOwnCard);
 
 		// Проверяем обязательные параметры
 		if (!orderNumber || !operation || status === undefined) {
@@ -125,33 +143,91 @@ const handleCallback = async (req, res) => {
 				return res.status(200).send('OK');
 			}
 
-			// Получаем данные заказа из backup (данные были сохранены перед оплатой)
-			const orderBackup = await orderBackupModel.getOrderBackupByOrderNumber(
-				orderNumber
-			);
-
-			if (!orderBackup) {
-				console.error(`Order backup not found for orderNumber: ${orderNumber}`);
-				return res.status(200).send('OK');
-			}
-
-			// Создаем основной заказ из backup данных
-			const orderData = {
-				userId: orderBackup.user_id,
-				phone: orderBackup.phone,
-				email: orderBackup.email,
-				address: orderBackup.address,
-				city: orderBackup.city,
-				sum: orderBackup.sum,
-				product_quantity: orderBackup.product_quantity,
-				products_info: orderBackup.products_info,
-				orderNumber: orderBackup.orderNumber,
-				date_order: orderBackup.date_order,
+			// Парсим orderDescription для извлечения данных заказа
+			// Формат: "Номер заказа - X, Информация о заказе(id, название, вес) - Y, Кол-во товаров - Z, Город - CITY, Адрес - ADDRESS, Email - EMAIL, Телефон - PHONE, ФИО - NAME"
+			let parsedData = {
+				userId: 0,
+				phone: '',
+				email: '',
+				address: '',
+				city: '',
+				sum: 0,
+				product_quantity: 0,
+				products_info: '',
+				orderNumber: orderNumber,
+				date_order: date || new Date().toISOString().split('T')[0],
 			};
 
-			const orderId = await orderModel.createOrder(orderData);
+			if (orderDescription) {
+				console.log('📝 Parsing orderDescription:', orderDescription);
+
+				// Извлекаем данные из orderDescription
+				const cityMatch = orderDescription.match(/Город - ([^,]+)/);
+				const addressMatch = orderDescription.match(/Адрес - ([^,]+)/);
+				const productsInfoMatch = orderDescription.match(
+					/Информация о заказе\(id, название, вес\) - ([^,]+)/
+				);
+				const quantityMatch = orderDescription.match(/Кол-во товаров - (\d+)/);
+				const emailMatch = orderDescription.match(/Email - ([^,]+)/);
+				const phoneMatch = orderDescription.match(/Телефон - ([^,]+)/);
+				const fioMatch = orderDescription.match(/ФИО - (.+?)(?:,|$)/);
+
+				parsedData.city = cityMatch ? cityMatch[1].trim() : '';
+				parsedData.address = addressMatch ? addressMatch[1].trim() : '';
+				parsedData.products_info = productsInfoMatch
+					? productsInfoMatch[1].trim()
+					: '';
+				parsedData.product_quantity = quantityMatch
+					? parseInt(quantityMatch[1], 10)
+					: 0;
+				parsedData.email = emailMatch ? emailMatch[1].trim() : '';
+				parsedData.phone = phoneMatch ? phoneMatch[1].trim() : '';
+
+				console.log('📋 Parsed data from orderDescription:', parsedData);
+			}
+
+			// Используем amount из callback (в копейках, переводим в рубли)
+			if (amount) {
+				parsedData.sum = parseInt(amount, 10) / 100;
+			}
+
+			// Если данных из orderDescription недостаточно, пытаемся получить из backup (fallback)
+			if (!parsedData.email && !parsedData.phone) {
+				console.log(
+					'⚠️  Insufficient data from orderDescription, trying backup...'
+				);
+				const orderBackup = await orderBackupModel.getOrderBackupByOrderNumber(
+					orderNumber
+				);
+
+				if (orderBackup) {
+					parsedData = {
+						userId: orderBackup.user_id,
+						phone: parsedData.phone || orderBackup.phone,
+						email: parsedData.email || orderBackup.email,
+						address: parsedData.address || orderBackup.address,
+						city: parsedData.city || orderBackup.city,
+						sum: parsedData.sum || orderBackup.sum,
+						product_quantity:
+							parsedData.product_quantity || orderBackup.product_quantity,
+						products_info:
+							parsedData.products_info || orderBackup.products_info,
+						orderNumber: orderBackup.orderNumber,
+						date_order: parsedData.date_order || orderBackup.date_order,
+					};
+					console.log('📋 Using backup data:', parsedData);
+				} else {
+					console.error(
+						`Order backup not found for orderNumber: ${orderNumber}`
+					);
+					return res.status(200).send('OK');
+				}
+			}
+
+			// Создаем основной заказ
+			const orderId = await orderModel.createOrder(parsedData);
 			console.log(
-				`Order created successfully with ID: ${orderId} for orderNumber: ${orderNumber}`
+				`✅ Order created successfully with ID: ${orderId} for orderNumber: ${orderNumber}`
 			);
 
 			// Возвращаем успешный ответ шлюзу
