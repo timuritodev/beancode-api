@@ -14,10 +14,13 @@ router.use(bodyParser.urlencoded({ extended: true }));
 const handleCallback = async (req, res) => {
 	try {
 		// Функция для декодирования URL-encoded строк
+		// В URL + означает пробел, поэтому сначала заменяем + на %20, затем декодируем
 		const decodeParam = (param) => {
 			if (!param) return param;
 			try {
-				return decodeURIComponent(String(param));
+				// Заменяем + на %20 перед декодированием
+				const withSpaces = String(param).replace(/\+/g, '%20');
+				return decodeURIComponent(withSpaces);
 			} catch (e) {
 				console.warn('Failed to decode param:', param, e);
 				return param;
@@ -94,64 +97,56 @@ const handleCallback = async (req, res) => {
 		delete allParamsRaw.checksum;
 		delete allParamsRaw.sign_alias;
 
-		// Пробуем оба варианта: с декодированием и без
-		// Вариант 1: Декодируем URL-encoded параметры
-		const allParamsDecoded = {};
-		for (const key in allParamsRaw) {
-			allParamsDecoded[key] = decodeParam(allParamsRaw[key]);
-		}
-
-		// Вариант 2: Без декодирования (используем как есть)
-		const allParamsEncoded = { ...allParamsRaw };
+		// Для проверки подписи используем параметры как есть (encoded)
+		// Платежный шлюз формирует подпись от параметров в том виде, в котором они приходят в URL
+		const allParamsForSignature = { ...allParamsRaw };
 
 		console.log(
-			'📋 All callback parameters (without checksum and sign_alias, encoded):',
-			allParamsEncoded
-		);
-		console.log(
-			'📋 All callback parameters (without checksum and sign_alias, decoded):',
-			allParamsDecoded
+			'📋 All callback parameters (without checksum and sign_alias, for signature):',
+			allParamsForSignature
 		);
 		console.log('📋 Received checksum:', checksum);
 
-		// Проверяем оба варианта
-		const checkSignature = (params, label) => {
-			const sortedKeys = Object.keys(params).sort();
-			const dataString = sortedKeys
-				.map((key) => `${key};${params[key] || ''};`)
-				.join('');
+		// Сортируем параметры по именам в алфавитном порядке (по возрастанию)
+		const sortedKeys = Object.keys(allParamsForSignature).sort();
 
-			const calculatedChecksum = crypto
-				.createHmac('sha256', callbackToken)
-				.update(dataString)
-				.digest('hex')
-				.toUpperCase();
+		// Формируем строку в формате: имя1;значение1;имя2;значение2;...;имяN;значениеN;
+		// Обратите внимание: строка заканчивается точкой с запятой!
+		const dataString = sortedKeys
+			.map((key) => `${key};${allParamsForSignature[key] || ''};`)
+			.join('');
 
-			const receivedChecksumUpper = checksum.toUpperCase();
-			const match = receivedChecksumUpper === calculatedChecksum;
+		console.log('📝 Sorted parameter keys:', sortedKeys);
+		console.log('📝 Generated data string:', dataString);
 
-			console.log(`🔐 Signature verification (${label}):`);
-			console.log('  Sorted keys:', sortedKeys);
-			console.log('  Data string:', dataString);
-			console.log('  Calculated checksum:', calculatedChecksum);
-			console.log('  Received checksum:', receivedChecksumUpper);
-			console.log('  Match:', match ? '✅ YES' : '❌ NO');
+		// Вычисляем HMAC-SHA256
+		const calculatedChecksum = crypto
+			.createHmac('sha256', callbackToken)
+			.update(dataString)
+			.digest('hex')
+			.toUpperCase();
 
-			return { match, dataString, calculatedChecksum, sortedKeys };
-		};
+		const receivedChecksumUpper = checksum ? checksum.toUpperCase() : '';
 
-		const resultEncoded = checkSignature(allParamsEncoded, 'encoded');
-		const resultDecoded = checkSignature(allParamsDecoded, 'decoded');
+		console.log('🔐 Signature verification:');
+		console.log('  Data string:', dataString);
+		console.log('  Calculated checksum:', calculatedChecksum);
+		console.log('  Received checksum:', receivedChecksumUpper);
+		console.log(
+			'  Match:',
+			receivedChecksumUpper === calculatedChecksum ? '✅ YES' : '❌ NO'
+		);
 
-		const isValid = resultEncoded.match || resultDecoded.match;
-		const matchedVariant = resultEncoded.match
-			? 'Encoded format'
-			: resultDecoded.match
-			? 'Decoded format'
+		const isValid = receivedChecksumUpper === calculatedChecksum;
+		const matchedVariant = isValid
+			? 'Correct format (name1;value1;name2;value2;...;nameN;valueN;)'
 			: null;
 
-		// Используем декодированные параметры для дальнейшей обработки
-		const allParams = allParamsDecoded;
+		// Для дальнейшей обработки декодируем параметры
+		const allParams = {};
+		for (const key in allParamsRaw) {
+			allParams[key] = decodeParam(allParamsRaw[key]);
+		}
 
 		if (!isValid) {
 			console.error('❌ SIGNATURE VERIFICATION FAILED');
