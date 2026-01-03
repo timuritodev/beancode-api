@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const url = require('url');
 const querystring = require('querystring');
 const orderModel = require('../models/order');
+const { findUserByEmail } = require('../models/user');
 
 const router = express.Router();
 
@@ -298,6 +299,16 @@ const handleCallback = async (req, res) => {
 				console.error('  address:', parsedData.address || 'MISSING');
 				console.error('  orderDescription:', orderDescription || 'MISSING');
 				return res.status(400).send('Insufficient data in callback');
+			}
+
+			// Находим пользователя по email
+			const user = await findUserByEmail(parsedData.email);
+			if (user) {
+				parsedData.userId = user.id;
+			} else {
+				console.warn(
+					`⚠️  User not found by email: ${parsedData.email}, using userId: 0`
+				);
 			}
 
 			// Создаем основной заказ
