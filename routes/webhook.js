@@ -49,21 +49,7 @@ const handleCallback = async (req, res) => {
 			mdOrder,
 			operation,
 			status,
-			checksum,
-			orderDescription,
-			amount,
-			date,
-			alfaPayOwnCard,
 		});
-
-		// Логируем все дополнительные параметры
-		console.log('📦 Additional callback parameters:');
-		console.log('  orderDescription (raw):', orderDescriptionRaw);
-		console.log('  orderDescription (decoded):', orderDescription);
-		console.log('  amount:', amount);
-		console.log('  date (raw):', dateRaw);
-		console.log('  date (decoded):', date);
-		console.log('  alfaPayOwnCard:', alfaPayOwnCard);
 
 		// Проверяем обязательные параметры
 		if (!orderNumber || !operation || status === undefined) {
@@ -72,7 +58,6 @@ const handleCallback = async (req, res) => {
 		}
 
 		// Проверяем подпись (checksum) для безопасности - симметричная подпись (HMAC)
-		console.log('=== SIGNATURE VERIFICATION START ===');
 
 		if (!checksum) {
 			console.error('❌ Callback received without checksum');
@@ -92,18 +77,10 @@ const handleCallback = async (req, res) => {
 		// Express автоматически декодирует query параметры, поэтому парсим URL вручную
 		let allParamsForSignature = {};
 
-		console.log('🔍 Debug request info:');
-		console.log('  Method:', req.method);
-		console.log('  originalUrl:', req.originalUrl);
-		console.log('  url:', req.url);
-		console.log('  req.query:', req.query);
-		console.log('  req.body:', req.body);
-
 		// Для GET запросов получаем параметры из URL (encoded)
 		if (req.method === 'GET' && req.originalUrl) {
 			const parsedUrl = url.parse(req.originalUrl, false);
 			if (parsedUrl.query) {
-				console.log('  Raw query string (GET):', parsedUrl.query);
 				// Парсим query string вручную, сохраняя encoded значения
 				parsedUrl.query.split('&').forEach((pair) => {
 					const equalIndex = pair.indexOf('=');
@@ -123,7 +100,6 @@ const handleCallback = async (req, res) => {
 			if (req.originalUrl && req.originalUrl.includes('?')) {
 				const parsedUrl = url.parse(req.originalUrl, false);
 				if (parsedUrl.query) {
-					console.log('  Raw query string (POST):', parsedUrl.query);
 					parsedUrl.query.split('&').forEach((pair) => {
 						const equalIndex = pair.indexOf('=');
 						if (equalIndex > 0) {
@@ -155,11 +131,6 @@ const handleCallback = async (req, res) => {
 			};
 		}
 
-		console.log(
-			'  Parsed params for signature (before removing checksum):',
-			allParamsForSignature
-		);
-
 		// Убеждаемся, что все дополнительные параметры включены
 		// (на случай, если они не попали в allParamsForSignature)
 		if (orderDescriptionRaw && !allParamsForSignature.orderDescription) {
@@ -178,12 +149,6 @@ const handleCallback = async (req, res) => {
 		// Удаляем checksum и sign_alias из параметров для проверки
 		delete allParamsForSignature.checksum;
 		delete allParamsForSignature.sign_alias;
-
-		console.log(
-			'📋 All callback parameters (without checksum and sign_alias, for signature):',
-			allParamsForSignature
-		);
-		console.log('📋 Received checksum:', checksum);
 
 		// Создаем два варианта параметров для проверки:
 		// 1. allParamsEncoded - параметры как есть (encoded, если были в URL)
@@ -206,16 +171,6 @@ const handleCallback = async (req, res) => {
 				.digest('hex')
 				.toUpperCase();
 			const receivedChecksumUpper = checksum ? checksum.toUpperCase() : '';
-
-			console.log(`🔐 Signature verification (${variantName}):`);
-			console.log('  Sorted keys:', sortedKeys);
-			console.log('  Data string:', dataString);
-			console.log('  Calculated checksum:', calculatedChecksum);
-			console.log('  Received checksum:', receivedChecksumUpper);
-			console.log(
-				'  Match:',
-				calculatedChecksum === receivedChecksumUpper ? '✅ YES' : '❌ NO'
-			);
 
 			return {
 				isValid: calculatedChecksum === receivedChecksumUpper,
@@ -248,16 +203,10 @@ const handleCallback = async (req, res) => {
 
 		if (!isValid) {
 			console.error('❌ SIGNATURE VERIFICATION FAILED');
-			console.error('Received checksum:', receivedChecksumUpper);
-			console.error('Tried all variants, none matched');
-			console.log('=== SIGNATURE VERIFICATION END (FAILED) ===');
 			return res.status(400).send('Invalid signature');
 		}
 
-		console.log(
-			`✅ SIGNATURE VERIFICATION SUCCESS (matched: ${matchedVariant})`
-		);
-		console.log('=== SIGNATURE VERIFICATION END ===');
+		console.log(`✅ Signature verified (${matchedVariant})`);
 
 		// Обрабатываем только успешное списание средств
 		if (operation === 'deposited' && status === '1') {
@@ -272,9 +221,7 @@ const handleCallback = async (req, res) => {
 			// Функция для преобразования даты из формата DD.MM.YYYY HH:MM:SS в YYYY-MM-DD HH:MM:SS
 			const formatDateForMySQL = (dateStr) => {
 				if (!dateStr) {
-					const defaultDate = new Date().toISOString().split('T')[0];
-					console.log('📅 No date provided, using default:', defaultDate);
-					return defaultDate;
+					return new Date().toISOString().split('T')[0];
 				}
 				// Формат: "03.01.2026 19:12:47" -> "2026-01-03 19:12:47"
 				const match = dateStr.match(
@@ -282,9 +229,7 @@ const handleCallback = async (req, res) => {
 				);
 				if (match) {
 					const [, day, month, year, hour, minute, second] = match;
-					const formattedDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-					console.log(`📅 Date converted: "${dateStr}" -> "${formattedDate}"`);
-					return formattedDate;
+					return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 				}
 				// Если формат не совпадает, возвращаем текущую дату
 				console.warn(
@@ -309,8 +254,6 @@ const handleCallback = async (req, res) => {
 			};
 
 			if (orderDescription) {
-				console.log('📝 Parsing orderDescription:', orderDescription);
-
 				// Извлекаем данные из orderDescription
 				const cityMatch = orderDescription.match(/Город - ([^,]+)/);
 				const addressMatch = orderDescription.match(/Адрес - ([^,]+)/);
@@ -332,19 +275,11 @@ const handleCallback = async (req, res) => {
 					: 0;
 				parsedData.email = emailMatch ? emailMatch[1].trim() : '';
 				parsedData.phone = phoneMatch ? phoneMatch[1].trim() : '';
-
-				console.log('📋 Parsed data from orderDescription:', parsedData);
 			}
 
 			// Используем amount из callback (в копейках, переводим в рубли)
 			if (amount) {
-				const amountInKopecks = parseInt(amount, 10);
-				parsedData.sum = amountInKopecks / 100;
-				console.log(
-					`💰 Amount converted: ${amountInKopecks} kopecks = ${parsedData.sum} rubles`
-				);
-			} else {
-				console.warn('⚠️  No amount provided in callback');
+				parsedData.sum = parseInt(amount, 10) / 100;
 			}
 
 			// Проверяем, что все необходимые данные есть
