@@ -24,7 +24,6 @@ const sendTelegramNotification = async (botToken, chatId, message) => {
 		// Проверяем что после удаления HTML тегов остается текст
 		const textWithoutHtml = cleanMessage.replace(/<[^>]*>/g, '').trim();
 		if (textWithoutHtml.length === 0) {
-			console.error('⚠️  Message contains only HTML tags, no text content');
 			return reject(
 				new Error('Message contains only HTML tags, no text content')
 			);
@@ -43,13 +42,6 @@ const sendTelegramNotification = async (botToken, chatId, message) => {
 		};
 
 		const data = JSON.stringify(payload, null, 0);
-
-		console.log('📨 Telegram payload:', {
-			chatId: chatId,
-			messageLength: cleanMessage.length,
-			textWithoutHtmlLength: textWithoutHtml.length,
-			messagePreview: cleanMessage.substring(0, 150),
-		});
 
 		const options = {
 			hostname: 'api.telegram.org',
@@ -72,12 +64,6 @@ const sendTelegramNotification = async (botToken, chatId, message) => {
 				if (res.statusCode === 200) {
 					resolve(JSON.parse(responseData));
 				} else {
-					console.error('❌ Telegram API error:', {
-						statusCode: res.statusCode,
-						response: responseData,
-						messageLength: cleanMessage.length,
-						messagePreview: cleanMessage.substring(0, 200),
-					});
 					reject(new Error(`HTTP ${res.statusCode}: ${responseData}`));
 				}
 			});
@@ -97,7 +83,6 @@ const sendTelegramNotification = async (botToken, chatId, message) => {
  */
 const formatOrderNotification = (order) => {
 	if (!order) {
-		console.error('⚠️  formatOrderNotification: order is null or undefined');
 		return '🆕 <b>Новый заказ</b>\n\n⚠️ Данные заказа недоступны';
 	}
 
@@ -119,7 +104,6 @@ ${statusEmoji} <b>Статус:</b> ${order.status || 'не отправлен'}
 	`.trim();
 
 	if (!message || message.length === 0) {
-		console.error('⚠️  formatOrderNotification: message is empty');
 		return '🆕 <b>Новый заказ</b>\n\n⚠️ Не удалось сформировать сообщение';
 	}
 

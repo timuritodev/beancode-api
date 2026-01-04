@@ -325,58 +325,26 @@ const handleCallback = async (req, res) => {
 			const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
 			const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
-			console.log('🔍 Telegram config check:', {
-				hasToken: !!telegramBotToken,
-				hasChatId: !!telegramChatId,
-				chatId: telegramChatId,
-			});
-
 			if (telegramBotToken && telegramChatId) {
 				try {
 					const order = await orderModel.getOrderById(orderId);
 					if (order) {
-						console.log('📋 Order data for notification:', {
-							id: order.id,
-							orderNumber: order.orderNumber,
-							email: order.email,
-							hasProductsInfo: !!order.products_info,
-						});
-
 						const message = formatOrderNotification(order);
-
-						if (!message || message.trim().length === 0) {
-							console.error('⚠️  Message is empty, cannot send notification');
-							return res.status(200).send('OK');
+						if (message && message.trim().length > 0) {
+							await sendTelegramNotification(
+								telegramBotToken,
+								telegramChatId,
+								message
+							);
 						}
-
-						console.log(
-							'📤 Sending Telegram notification, message length:',
-							message.length
-						);
-						await sendTelegramNotification(
-							telegramBotToken,
-							telegramChatId,
-							message
-						);
-						console.log('📱 Telegram notification sent successfully');
-					} else {
-						console.warn(
-							'⚠️  Order not found for notification, orderId:',
-							orderId
-						);
 					}
 				} catch (error) {
 					console.error(
 						'⚠️  Failed to send Telegram notification:',
-						error.message,
-						error.stack
+						error.message
 					);
 					// Не прерываем выполнение, если уведомление не отправилось
 				}
-			} else {
-				console.warn(
-					'⚠️  Telegram notification skipped: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID'
-				);
 			}
 
 			// Возвращаем успешный ответ шлюзу
