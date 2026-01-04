@@ -69,9 +69,37 @@ const getOrderByOrderNumber = async (orderNumber) => {
   }
 };
 
+const updateOrderStatus = async (orderId, status) => {
+  try {
+    const [rows, fields] = await pool.execute(
+      "UPDATE orders SET status = ? WHERE id = ?",
+      [status, orderId]
+    );
+    return rows.affectedRows > 0;
+  } catch (error) {
+    console.error("Error in updateOrderStatus:", error);
+    throw error;
+  }
+};
+
+const getOrderById = async (orderId) => {
+  try {
+    const [rows, fields] = await pool.execute(
+      "SELECT * FROM orders WHERE id = ? LIMIT 1",
+      [orderId]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    console.error("Error in getOrderById:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   getAllOrders,
   createOrder,
   getOrdersByUserId,
   getOrderByOrderNumber,
+  updateOrderStatus,
+  getOrderById,
 };

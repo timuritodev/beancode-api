@@ -1,3 +1,4 @@
+require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
 // const mongoose = require('mongoose');
@@ -5,7 +6,6 @@ const express = require('express');
 const helmet = require('helmet');
 const { errors } = require('celebrate');
 const cors = require('cors');
-// const dotenv = require("dotenv");
 // const path = require("path");
 // const { login, createUser } = require('./controllers/users');
 const productRoutes = require('./routes/products');

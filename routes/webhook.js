@@ -5,6 +5,10 @@ const url = require('url');
 const querystring = require('querystring');
 const orderModel = require('../models/order');
 const { findUserByEmail } = require('../models/user');
+const {
+	sendTelegramNotification,
+	formatOrderNotification,
+} = require('../utils/telegram');
 
 const router = express.Router();
 
@@ -316,6 +320,31 @@ const handleCallback = async (req, res) => {
 			console.log(
 				`✅ Order created successfully with ID: ${orderId} for orderNumber: ${orderNumber}`
 			);
+
+			// Отправляем уведомление в Telegram (если настроено)
+			const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+			const telegramChatId = process.env.TELEGRAM_CHAT_ID;
+
+			if (telegramBotToken && telegramChatId) {
+				try {
+					const order = await orderModel.getOrderById(orderId);
+					if (order) {
+						const message = formatOrderNotification(order);
+						await sendTelegramNotification(
+							telegramBotToken,
+							telegramChatId,
+							message
+						);
+						console.log('📱 Telegram notification sent');
+					}
+				} catch (error) {
+					console.error(
+						'⚠️  Failed to send Telegram notification:',
+						error.message
+					);
+					// Не прерываем выполнение, если уведомление не отправилось
+				}
+			}
 
 			// Возвращаем успешный ответ шлюзу
 			return res.status(200).send('OK');
