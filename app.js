@@ -99,7 +99,8 @@ app.use('/api/api-delivery', apiProxyDeliver);
 
 app.use('/api/api-status', apiProxyStatus);
 
-app.use('/api/api-pay', apiProxyPay);
+// Для платежного прокси нужен парсинг form-data
+app.use('/api/api-pay', bodyParser.urlencoded({ extended: true }), apiProxyPay);
 
 app.use('/api/api-auth', apiProxyDeliverAuth);
 

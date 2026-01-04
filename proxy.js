@@ -1,168 +1,200 @@
-const { createProxyMiddleware } = require("http-proxy-middleware");
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const proxyOptionsStatus = {
-  target: "https://payment.alfabank.ru/payment/rest/getOrderStatus.do",
-  changeOrigin: true,
-  pathRewrite: {
-    "^/api/api-status": "",
-  },
+	target: 'https://payment.alfabank.ru/payment/rest/getOrderStatus.do',
+	changeOrigin: true,
+	pathRewrite: {
+		'^/api/api-status': '',
+	},
 };
 
 const apiProxyStatus = createProxyMiddleware(
-  "/api/api-status",
-  proxyOptionsStatus
+	'/api/api-status',
+	proxyOptionsStatus
 );
 
 const proxyOptionsPay = {
-  target: "https://payment.alfabank.ru/payment/rest/register.do",
-  changeOrigin: true,
-  pathRewrite: {
-    "^/api/api-pay": "",
-  },
+	target: 'https://payment.alfabank.ru/payment/rest/register.do',
+	changeOrigin: true,
+	pathRewrite: {
+		'^/api/api-pay': '',
+	},
+	onProxyReq: (proxyReq, req, res) => {
+		// Получаем секретные данные из переменных окружения
+		const userName = process.env.PAY_API_USERNAME;
+		const password = process.env.PAY_API_PASSWORD;
+
+		if (!userName || !password || !req.body) {
+			return;
+		}
+
+		// bodyParser уже распарсил body как объект
+		const formData = new URLSearchParams();
+
+		// Добавляем userName и password первыми
+		formData.append('userName', userName);
+		formData.append('password', password);
+
+		// Добавляем остальные поля из req.body (исключаем userName и password если они есть)
+		for (const key in req.body) {
+			if (
+				key !== 'userName' &&
+				key !== 'password' &&
+				req.body[key] !== undefined &&
+				req.body[key] !== null
+			) {
+				formData.append(key, String(req.body[key]));
+			}
+		}
+
+		const bodyString = formData.toString();
+		proxyReq.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+		proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyString, 'utf8'));
+		proxyReq.write(bodyString);
+	},
 };
 
-const apiProxyPay = createProxyMiddleware("/api/api-pay", proxyOptionsPay);
+const apiProxyPay = createProxyMiddleware('/api/api-pay', proxyOptionsPay);
 
 const proxyOptionsDeliverAuth = {
-  // target: "https://api.edu.cdek.ru/v2/oauth/token?parameters",
-  target: "https://api.cdek.ru/v2/oauth/token?parameters",
-  changeOrigin: true,
-  pathRewrite: {
-    "^/api/api-auth": "",
-  },
+	// target: "https://api.edu.cdek.ru/v2/oauth/token?parameters",
+	target: 'https://api.cdek.ru/v2/oauth/token?parameters',
+	changeOrigin: true,
+	pathRewrite: {
+		'^/api/api-auth': '',
+	},
 };
 
 const apiProxyDeliverAuth = createProxyMiddleware(
-  "/api/api-auth",
-  proxyOptionsDeliverAuth
+	'/api/api-auth',
+	proxyOptionsDeliverAuth
 );
 
 const proxyOptionsDeliver = {
-  // target: "https://api.edu.cdek.ru/v2/orders",
-  target: "https://api.cdek.ru/v2/orders",
-  changeOrigin: true,
-  pathRewrite: {
-    "^/api/api-delivery": "",
-  },
-  // timeout: 60000, // Увеличенное время ожидания
-  // proxyTimeout: 60000,
-  onProxyReq: (proxyReq, req, res) => {
-    // console.log('Order request:', {
-    //   method: req.method,
-    //   url: proxyReq.path,
-    //   headers: req.headers,
-    //   body: JSON.stringify(req.body), // Преобразование тела в строку для логирования
-    // });
+	// target: "https://api.edu.cdek.ru/v2/orders",
+	target: 'https://api.cdek.ru/v2/orders',
+	changeOrigin: true,
+	pathRewrite: {
+		'^/api/api-delivery': '',
+	},
+	// timeout: 60000, // Увеличенное время ожидания
+	// proxyTimeout: 60000,
+	onProxyReq: (proxyReq, req, res) => {
+		// console.log("Order request:", {
+		//   method: req.method,
+		//   url: proxyReq.path,
+		//   headers: req.headers,
+		//   body: JSON.stringify(req.body), // Преобразование тела в строку для логирования
+		// });
 
-    if (req.body) {
-      let bodyData = JSON.stringify(req.body);
-      // Установите Content-Length для тела запроса
-      // proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-      // Запишите тело запроса
-      proxyReq.write(bodyData);
-    }
-  },
-  onProxyRes: (proxyRes, req, res) => {
-    let data = "";
-    proxyRes.on("data", (chunk) => {
-      data += chunk;
-    });
-    proxyRes.on("end", () => {
-      // console.log('Order response:', {
-      //   statusCode: proxyRes.statusCode,
-      //   headers: proxyRes.headers,
-      //   body: data,
-      // });
-    });
-  },
-  onError: (err, req, res) => {
-    // console.error('Proxy error:', err);
-    res.writeHead(500, {
-      "Content-Type": "text/plain",
-    });
-    res.end(
-      "Something went wrong. And we are reporting a custom error message."
-    );
-  },
+		if (req.body) {
+			let bodyData = JSON.stringify(req.body);
+			// Установите Content-Length для тела запроса
+			// proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
+			// Запишите тело запроса
+			proxyReq.write(bodyData);
+		}
+	},
+	onProxyRes: (proxyRes, req, res) => {
+		let data = '';
+		proxyRes.on('data', (chunk) => {
+			data += chunk;
+		});
+		proxyRes.on('end', () => {
+			// console.log("Order response:", {
+			//   statusCode: proxyRes.statusCode,
+			//   headers: proxyRes.headers,
+			//   body: data,
+			// });
+		});
+	},
+	onError: (err, req, res) => {
+		// console.error("Proxy error:", err);
+		res.writeHead(500, {
+			'Content-Type': 'text/plain',
+		});
+		res.end(
+			'Something went wrong. And we are reporting a custom error message.'
+		);
+	},
 };
 
 const apiProxyDeliver = createProxyMiddleware(
-  "/api/api-delivery",
-  proxyOptionsDeliver
+	'/api/api-delivery',
+	proxyOptionsDeliver
 );
 
 const proxyOptionsDeliverPrice = {
-  target: "https://api.cdek.ru/v2/calculator/tariff",
-  changeOrigin: true,
-  pathRewrite: {
-    "^/api/api-calculate": "",
-  },
-  // timeout: 60000, // Увеличенное время ожидания
-  // proxyTimeout: 60000,
-  onProxyReq: (proxyReq, req, res) => {
-    // console.log('Order request:', {
-    //   method: req.method,
-    //   url: proxyReq.path,
-    //   headers: req.headers,
-    //   body: JSON.stringify(req.body), // Преобразование тела в строку для логирования
-    // });
+	target: 'https://api.cdek.ru/v2/calculator/tariff',
+	changeOrigin: true,
+	pathRewrite: {
+		'^/api/api-calculate': '',
+	},
+	// timeout: 60000, // Увеличенное время ожидания
+	// proxyTimeout: 60000,
+	onProxyReq: (proxyReq, req, res) => {
+		// console.log("Order request:", {
+		//   method: req.method,
+		//   url: proxyReq.path,
+		//   headers: req.headers,
+		//   body: JSON.stringify(req.body), // Преобразование тела в строку для логирования
+		// });
 
-    if (req.body) {
-      let bodyData = JSON.stringify(req.body);
-      // Установите Content-Length для тела запроса
-      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-      // Запишите тело запроса
-      proxyReq.write(bodyData);
-    }
-  },
-  onProxyRes: (proxyRes, req, res) => {
-    let data = "";
-    proxyRes.on("data", (chunk) => {
-      data += chunk;
-    });
-    proxyRes.on("end", () => {
-      // console.log('Order response:', {
-      //   statusCode: proxyRes.statusCode,
-      //   headers: proxyRes.headers,
-      //   body: data,
-      // });
-    });
-  },
-  onError: (err, req, res) => {
-    // console.error('Proxy error:', err);
-    res.writeHead(500, {
-      "Content-Type": "text/plain",
-    });
-    res.end(
-      "Something went wrong. And we are reporting a custom error message."
-    );
-  },
+		if (req.body) {
+			let bodyData = JSON.stringify(req.body);
+			// Установите Content-Length для тела запроса
+			proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+			// Запишите тело запроса
+			proxyReq.write(bodyData);
+		}
+	},
+	onProxyRes: (proxyRes, req, res) => {
+		let data = '';
+		proxyRes.on('data', (chunk) => {
+			data += chunk;
+		});
+		proxyRes.on('end', () => {
+			// console.log("Order response:", {
+			//   statusCode: proxyRes.statusCode,
+			//   headers: proxyRes.headers,
+			//   body: data,
+			// });
+		});
+	},
+	onError: (err, req, res) => {
+		// console.error("Proxy error:", err);
+		res.writeHead(500, {
+			'Content-Type': 'text/plain',
+		});
+		res.end(
+			'Something went wrong. And we are reporting a custom error message.'
+		);
+	},
 };
 
-const proxyOptionsCountries= {
-  target: "https://api.cdek.ru/v2/location/cities",
-  changeOrigin: true,
-  pathRewrite: {
-    "^/api/api-countries": "",
-  },
+const proxyOptionsCountries = {
+	target: 'https://api.cdek.ru/v2/location/cities',
+	changeOrigin: true,
+	pathRewrite: {
+		'^/api/api-countries': '',
+	},
 };
 
 const apiProxyCountries = createProxyMiddleware(
-  "/api/api-countries",
-  proxyOptionsCountries
+	'/api/api-countries',
+	proxyOptionsCountries
 );
 
-
 const apiProxyDeliverPrice = createProxyMiddleware(
-  "/api/api-calculate",
-  proxyOptionsDeliverPrice
+	'/api/api-calculate',
+	proxyOptionsDeliverPrice
 );
 
 module.exports = {
-  apiProxyStatus,
-  apiProxyPay,
-  apiProxyDeliverAuth,
-  apiProxyDeliver,
-  apiProxyDeliverPrice,
-  apiProxyCountries,
+	apiProxyStatus,
+	apiProxyPay,
+	apiProxyDeliverAuth,
+	apiProxyDeliver,
+	apiProxyDeliverPrice,
+	apiProxyCountries,
 };
