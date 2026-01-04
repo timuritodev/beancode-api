@@ -54,22 +54,34 @@ const sendTelegramNotification = async (botToken, chatId, message) => {
  * Форматирование сообщения о новом заказе
  */
 const formatOrderNotification = (order) => {
+	if (!order) {
+		console.error('⚠️  formatOrderNotification: order is null or undefined');
+		return '🆕 <b>Новый заказ</b>\n\n⚠️ Данные заказа недоступны';
+	}
+
 	const statusEmoji = order.status === 'sent' ? '✅' : '⏳';
-	return `
+	const message = `
 🆕 <b>Новый заказ</b>
 
-📦 <b>Номер заказа:</b> ${order.orderNumber}
-👤 <b>Клиент:</b> ${order.email}
-📞 <b>Телефон:</b> ${order.phone}
-📍 <b>Адрес:</b> ${order.city}, ${order.address}
-💰 <b>Сумма:</b> ${order.sum} ₽
-📊 <b>Товары:</b> ${order.products_info}
-📦 <b>Количество:</b> ${order.product_quantity}
-📅 <b>Дата:</b> ${order.date_order}
+📦 <b>Номер заказа:</b> ${order.orderNumber || 'не указан'}
+👤 <b>Клиент:</b> ${order.email || 'не указан'}
+📞 <b>Телефон:</b> ${order.phone || 'не указан'}
+📍 <b>Адрес:</b> ${order.city || ''}, ${order.address || ''}
+💰 <b>Сумма:</b> ${order.sum || 0} ₽
+📊 <b>Товары:</b> ${order.products_info || 'не указано'}
+📦 <b>Количество:</b> ${order.product_quantity || 0}
+📅 <b>Дата:</b> ${order.date_order || 'не указана'}
 ${statusEmoji} <b>Статус:</b> ${order.status || 'не отправлен'}
 
-<i>ID заказа: ${order.id}</i>
+<i>ID заказа: ${order.id || 'не указан'}</i>
 	`.trim();
+
+	if (!message || message.length === 0) {
+		console.error('⚠️  formatOrderNotification: message is empty');
+		return '🆕 <b>Новый заказ</b>\n\n⚠️ Не удалось сформировать сообщение';
+	}
+
+	return message;
 };
 
 module.exports = {
