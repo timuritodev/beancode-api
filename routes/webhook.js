@@ -18,6 +18,22 @@ router.use(bodyParser.urlencoded({ extended: true }));
 // Обработка callback-уведомлений от платежного шлюза
 // Поддерживаем как GET, так и POST запросы
 const handleCallback = async (req, res) => {
+	const requestStartTime = new Date().toISOString();
+	console.log(
+		'═══════════════════════════════════════════════════════════════'
+	);
+	console.log(`🔔 WEBHOOK REQUEST RECEIVED at ${requestStartTime}`);
+	console.log(`   Method: ${req.method}`);
+	console.log(`   URL: ${req.originalUrl || req.url}`);
+	console.log(`   Path: ${req.path}`);
+	console.log(`   Headers:`, JSON.stringify(req.headers, null, 2));
+	console.log(`   Query params:`, JSON.stringify(req.query, null, 2));
+	console.log(`   Body:`, JSON.stringify(req.body, null, 2));
+	console.log(`   Raw body:`, req.body);
+	console.log(
+		'───────────────────────────────────────────────────────────────'
+	);
+
 	try {
 		// Функция для декодирования URL-encoded строк
 		// В URL + означает пробел, поэтому сначала заменяем + на %20, затем декодируем
@@ -49,41 +65,73 @@ const handleCallback = async (req, res) => {
 		const date = decodeParam(dateRaw);
 		const alfaPayOwnCard = req.query.alfaPayOwnCard || req.body.alfaPayOwnCard;
 
-		console.log('Callback received:', {
-			orderNumber,
-			mdOrder,
-			operation,
-			status,
-		});
+		console.log('📦 EXTRACTED PARAMETERS:');
+		console.log('   orderNumber:', orderNumber);
+		console.log('   mdOrder:', mdOrder);
+		console.log('   operation:', operation);
+		console.log('   status:', status);
+		console.log(
+			'   checksum:',
+			checksum ? `${checksum.substring(0, 10)}...` : 'MISSING'
+		);
+		console.log('   orderDescription (raw):', orderDescriptionRaw);
+		console.log('   orderDescription (decoded):', orderDescription);
+		console.log('   amount:', amount);
+		console.log('   date (raw):', dateRaw);
+		console.log('   date (decoded):', date);
+		console.log('   alfaPayOwnCard:', alfaPayOwnCard);
+		console.log(
+			'───────────────────────────────────────────────────────────────'
+		);
 
 		// Проверяем обязательные параметры
 		if (!orderNumber || !operation || status === undefined) {
-			console.error('Missing required callback parameters');
-			return res.status(400).send('Missing required parameters');
+			console.error(
+				'❌ VALIDATION FAILED: Missing required callback parameters'
+			);
+			console.error('   orderNumber:', orderNumber || 'MISSING');
+			console.error('   operation:', operation || 'MISSING');
+			console.error('   status:', status === undefined ? 'MISSING' : status);
+			const errorResponse = 'Missing required parameters';
+			console.log(`   → Returning 400: ${errorResponse}`);
+			return res.status(400).send(errorResponse);
 		}
 
+		console.log('✅ Required parameters check passed');
+
 		// Проверяем подпись (checksum) для безопасности - симметричная подпись (HMAC)
+		console.log('🔐 Starting signature verification...');
 
 		if (!checksum) {
-			console.error('❌ Callback received without checksum');
-			return res.status(400).send('Missing checksum');
+			console.error(
+				'❌ SIGNATURE CHECK FAILED: Callback received without checksum'
+			);
+			const errorResponse = 'Missing checksum';
+			console.log(`   → Returning 400: ${errorResponse}`);
+			return res.status(400).send(errorResponse);
 		}
 
 		const callbackToken = process.env.CALLBACK_TOKEN;
 
 		if (!callbackToken) {
 			console.error(
-				'❌ CALLBACK_TOKEN not configured, cannot verify signature'
+				'❌ SIGNATURE CHECK FAILED: CALLBACK_TOKEN not configured, cannot verify signature'
 			);
-			return res.status(400).send('Signature verification failed');
+			const errorResponse = 'Signature verification failed';
+			console.log(`   → Returning 400: ${errorResponse}`);
+			return res.status(400).send(errorResponse);
 		}
+
+		console.log('   CALLBACK_TOKEN configured:', callbackToken ? 'YES' : 'NO');
 
 		// Получаем параметры в оригинальном виде (encoded) из URL для проверки подписи
 		// Express автоматически декодирует query параметры, поэтому парсим URL вручную
+		console.log('📋 Collecting parameters for signature verification...');
 		let allParamsForSignature = {};
 
 		// Для GET запросов получаем параметры из URL (encoded)
 		if (req.method === 'GET' && req.originalUrl) {
+			console.log('   Method: GET, parsing from URL');
 			const parsedUrl = url.parse(req.originalUrl, false);
 			if (parsedUrl.query) {
 				// Парсим query string вручную, сохраняя encoded значения
@@ -101,6 +149,7 @@ const handleCallback = async (req, res) => {
 		// Для POST запросов параметры могут быть в body или query
 		// Пробуем получить из URL если есть query параметры
 		if (req.method === 'POST') {
+			console.log('   Method: POST, collecting from URL and body');
 			// Сначала пробуем получить из URL (если есть query параметры в URL)
 			if (req.originalUrl && req.originalUrl.includes('?')) {
 				const parsedUrl = url.parse(req.originalUrl, false);
@@ -130,11 +179,22 @@ const handleCallback = async (req, res) => {
 
 		// Если не удалось получить из URL, используем req.query и req.body как fallback
 		if (Object.keys(allParamsForSignature).length === 0) {
+			console.log('   No params from URL, using query + body fallback');
 			allParamsForSignature = {
 				...(req.query || {}),
 				...(req.body || {}),
 			};
 		}
+
+		console.log(
+			`   Collected ${
+				Object.keys(allParamsForSignature).length
+			} parameters for signature`
+		);
+		console.log(
+			'   Parameters:',
+			Object.keys(allParamsForSignature).join(', ')
+		);
 
 		// Убеждаемся, что все дополнительные параметры включены
 		// (на случай, если они не попали в allParamsForSignature)
@@ -164,6 +224,10 @@ const handleCallback = async (req, res) => {
 			allParamsDecoded[key] = decodeParam(allParamsForSignature[key]);
 		}
 
+		console.log(
+			'   Preparing signature verification (encoded and decoded variants)...'
+		);
+
 		// Функция для проверки подписи
 		const checkSignature = (params, variantName) => {
 			const sortedKeys = Object.keys(params).sort();
@@ -177,9 +241,18 @@ const handleCallback = async (req, res) => {
 				.toUpperCase();
 			const receivedChecksumUpper = checksum ? checksum.toUpperCase() : '';
 
+			console.log(`   [${variantName}]`);
+			console.log(`     Data string length: ${dataString.length}`);
+			console.log(`     Calculated: ${calculatedChecksum.substring(0, 16)}...`);
+			console.log(
+				`     Received:   ${receivedChecksumUpper.substring(0, 16)}...`
+			);
+
 			return {
 				isValid: calculatedChecksum === receivedChecksumUpper,
 				variant: variantName,
+				calculated: calculatedChecksum,
+				received: receivedChecksumUpper,
 			};
 		};
 
@@ -208,20 +281,43 @@ const handleCallback = async (req, res) => {
 
 		if (!isValid) {
 			console.error('❌ SIGNATURE VERIFICATION FAILED');
-			return res.status(400).send('Invalid signature');
+			console.error('   Encoded variant valid:', resultEncoded.isValid);
+			console.error('   Decoded variant valid:', resultDecoded.isValid);
+			const errorResponse = 'Invalid signature';
+			console.log(`   → Returning 400: ${errorResponse}`);
+			return res.status(400).send(errorResponse);
 		}
 
-		console.log(`✅ Signature verified (${matchedVariant})`);
+		console.log(`✅ Signature verified successfully (${matchedVariant})`);
+		console.log(
+			'───────────────────────────────────────────────────────────────'
+		);
 
 		// Обрабатываем только успешное списание средств
+		console.log(`🔄 Processing operation: ${operation}, status: ${status}`);
 		if (operation === 'deposited' && status === '1') {
+			console.log('✅ Processing successful payment (deposited with status 1)');
 			// Проверяем, не создан ли уже заказ (чтобы избежать дублирования)
+			console.log(
+				`   Checking for existing order with orderNumber: ${orderNumber}`
+			);
 			const existingOrder = await orderModel.getOrderByOrderNumber(orderNumber);
 
 			if (existingOrder) {
-				console.log(`Order with orderNumber ${orderNumber} already exists`);
-				return res.status(200).send('OK');
+				console.log(
+					`⚠️  Order with orderNumber ${orderNumber} already exists (ID: ${existingOrder.id})`
+				);
+				console.log(`   → Returning 200: OK (duplicate ignored)`);
+				const response = 'OK';
+				res.status(200).send(response);
+				console.log(`✅ Response sent: ${response}`);
+				console.log(
+					'═══════════════════════════════════════════════════════════════'
+				);
+				return;
 			}
+
+			console.log('   No existing order found, creating new order...');
 
 			// Функция для преобразования даты из формата DD.MM.YYYY HH:MM:SS в YYYY-MM-DD HH:MM:SS
 			const formatDateForMySQL = (dateStr) => {
@@ -245,6 +341,7 @@ const handleCallback = async (req, res) => {
 
 			// Парсим orderDescription для извлечения данных заказа
 			// Формат: "Номер заказа - X, Информация о заказе(id, название, вес) - Y, Кол-во товаров - Z, Город - CITY, Адрес - ADDRESS, Email - EMAIL, Телефон - PHONE, ФИО - NAME"
+			console.log('📝 Parsing order data from orderDescription...');
 			let parsedData = {
 				userId: 0,
 				phone: '',
@@ -259,6 +356,9 @@ const handleCallback = async (req, res) => {
 			};
 
 			if (orderDescription) {
+				console.log(
+					`   orderDescription length: ${orderDescription.length} chars`
+				);
 				// Извлекаем данные из orderDescription
 				const cityMatch = orderDescription.match(/Город - ([^,]+)/);
 				const addressMatch = orderDescription.match(/Адрес - ([^,]+)/);
@@ -280,14 +380,33 @@ const handleCallback = async (req, res) => {
 					: 0;
 				parsedData.email = emailMatch ? emailMatch[1].trim() : '';
 				parsedData.phone = phoneMatch ? phoneMatch[1].trim() : '';
+
+				console.log('   Parsed values:');
+				console.log('     city:', parsedData.city || 'NOT FOUND');
+				console.log('     address:', parsedData.address || 'NOT FOUND');
+				console.log('     email:', parsedData.email || 'NOT FOUND');
+				console.log('     phone:', parsedData.phone || 'NOT FOUND');
+				console.log(
+					'     products_info:',
+					parsedData.products_info
+						? `${parsedData.products_info.substring(0, 50)}...`
+						: 'NOT FOUND'
+				);
+				console.log('     product_quantity:', parsedData.product_quantity);
+			} else {
+				console.warn('   ⚠️  No orderDescription provided');
 			}
 
 			// Используем amount из callback (в копейках, переводим в рубли)
 			if (amount) {
 				parsedData.sum = parseInt(amount, 10) / 100;
+				console.log(`   Amount: ${amount} kopecks = ${parsedData.sum} rubles`);
+			} else {
+				console.warn('   ⚠️  No amount provided');
 			}
 
 			// Проверяем, что все необходимые данные есть
+			console.log('🔍 Validating parsed data...');
 			if (
 				!parsedData.email ||
 				!parsedData.phone ||
@@ -306,16 +425,20 @@ const handleCallback = async (req, res) => {
 			}
 
 			// Находим пользователя по email
+			console.log(`🔍 Looking up user by email: ${parsedData.email}`);
 			const user = await findUserByEmail(parsedData.email);
 			if (user) {
 				parsedData.userId = user.id;
+				console.log(`   ✅ User found: ID ${user.id}`);
 			} else {
 				console.warn(
-					`⚠️  User not found by email: ${parsedData.email}, using userId: 0`
+					`   ⚠️  User not found by email: ${parsedData.email}, using userId: 0`
 				);
 			}
 
 			// Создаем основной заказ
+			console.log('💾 Creating order in database...');
+			console.log('   Order data:', JSON.stringify(parsedData, null, 2));
 			const orderId = await orderModel.createOrder(parsedData);
 			console.log(
 				`✅ Order created successfully with ID: ${orderId} for orderNumber: ${orderNumber}`
@@ -326,6 +449,7 @@ const handleCallback = async (req, res) => {
 			const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
 			if (telegramBotToken && telegramChatId) {
+				console.log('📤 Sending Telegram notification...');
 				try {
 					const order = await orderModel.getOrderById(orderId);
 					if (order) {
@@ -336,30 +460,73 @@ const handleCallback = async (req, res) => {
 								telegramChatId,
 								message
 							);
+							console.log('   ✅ Telegram notification sent successfully');
+						} else {
+							console.warn('   ⚠️  Telegram message is empty, skipping');
 						}
+					} else {
+						console.warn(
+							'   ⚠️  Order not found after creation, skipping Telegram notification'
+						);
 					}
 				} catch (error) {
 					console.error(
-						'⚠️  Failed to send Telegram notification:',
+						'   ❌ Failed to send Telegram notification:',
 						error.message
 					);
+					console.error('   Stack:', error.stack);
 					// Не прерываем выполнение, если уведомление не отправилось
 				}
+			} else {
+				console.log(
+					'   ℹ️  Telegram notifications not configured (missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID)'
+				);
 			}
 
 			// Возвращаем успешный ответ шлюзу
-			return res.status(200).send('OK');
+			console.log(
+				'───────────────────────────────────────────────────────────────'
+			);
+			const response = 'OK';
+			console.log(`✅ Processing completed successfully`);
+			console.log(`   → Returning 200: ${response}`);
+			res.status(200).send(response);
+			console.log(
+				'═══════════════════════════════════════════════════════════════'
+			);
+			return;
 		} else {
 			// Для других операций просто логируем и возвращаем OK
 			console.log(
-				`Callback received for operation: ${operation}, status: ${status} - no action needed`
+				`ℹ️  Callback received for operation: ${operation}, status: ${status} - no action needed`
 			);
-			return res.status(200).send('OK');
+			console.log(
+				'───────────────────────────────────────────────────────────────'
+			);
+			const response = 'OK';
+			console.log(`   → Returning 200: ${response}`);
+			res.status(200).send(response);
+			console.log(
+				'═══════════════════════════════════════════════════════════════'
+			);
+			return;
 		}
 	} catch (error) {
-		console.error('Error processing callback:', error);
+		console.error(
+			'───────────────────────────────────────────────────────────────'
+		);
+		console.error('❌ ERROR PROCESSING CALLBACK:');
+		console.error('   Error message:', error.message);
+		console.error('   Error stack:', error.stack);
+		console.error('   Error details:', error);
 		// Все равно возвращаем 200, чтобы шлюз не повторял запрос
-		return res.status(200).send('OK');
+		const response = 'OK';
+		console.log(`   → Returning 200: ${response} (to prevent retries)`);
+		res.status(200).send(response);
+		console.log(
+			'═══════════════════════════════════════════════════════════════'
+		);
+		return;
 	}
 };
 
