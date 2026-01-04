@@ -9,10 +9,46 @@ const https = require('https');
  */
 const sendTelegramNotification = async (botToken, chatId, message) => {
 	return new Promise((resolve, reject) => {
-		const data = JSON.stringify({
-			chat_id: chatId,
-			text: message,
+		// Проверяем что сообщение не пустое
+		if (
+			!message ||
+			typeof message !== 'string' ||
+			message.trim().length === 0
+		) {
+			return reject(new Error('Message is empty or invalid'));
+		}
+
+		// Убираем лишние пробелы и переносы строк
+		const cleanMessage = message.trim().replace(/\n{3,}/g, '\n\n');
+
+		// Проверяем что после удаления HTML тегов остается текст
+		const textWithoutHtml = cleanMessage.replace(/<[^>]*>/g, '').trim();
+		if (textWithoutHtml.length === 0) {
+			console.error('⚠️  Message contains only HTML tags, no text content');
+			return reject(
+				new Error('Message contains only HTML tags, no text content')
+			);
+		}
+
+		// Убеждаемся что chatId это число или строка
+		const chatIdNum =
+			typeof chatId === 'string' && /^-?\d+$/.test(chatId)
+				? parseInt(chatId, 10)
+				: chatId;
+
+		const payload = {
+			chat_id: chatIdNum,
+			text: cleanMessage,
 			parse_mode: 'HTML',
+		};
+
+		const data = JSON.stringify(payload, null, 0);
+
+		console.log('📨 Telegram payload:', {
+			chatId: chatId,
+			messageLength: cleanMessage.length,
+			textWithoutHtmlLength: textWithoutHtml.length,
+			messagePreview: cleanMessage.substring(0, 150),
 		});
 
 		const options = {
@@ -21,7 +57,7 @@ const sendTelegramNotification = async (botToken, chatId, message) => {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'Content-Length': data.length,
+				'Content-Length': Buffer.byteLength(data, 'utf8'),
 			},
 		};
 
@@ -36,6 +72,12 @@ const sendTelegramNotification = async (botToken, chatId, message) => {
 				if (res.statusCode === 200) {
 					resolve(JSON.parse(responseData));
 				} else {
+					console.error('❌ Telegram API error:', {
+						statusCode: res.statusCode,
+						response: responseData,
+						messageLength: cleanMessage.length,
+						messagePreview: cleanMessage.substring(0, 200),
+					});
 					reject(new Error(`HTTP ${res.statusCode}: ${responseData}`));
 				}
 			});
@@ -88,4 +130,3 @@ module.exports = {
 	sendTelegramNotification,
 	formatOrderNotification,
 };
-
