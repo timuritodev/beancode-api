@@ -19,6 +19,17 @@ router.post('/api/order/create', async (req, res) => {
 	}
 });
 
+// ВАЖНО: Специфичные роуты ДО динамических!
+router.get('/api/order/generate-number', async (req, res) => {
+	try {
+		const orderNumber = await orderModel.generateUniqueOrderNumber();
+		res.status(200).json({ orderNumber });
+	} catch (error) {
+		console.error('Error generating order number:', error);
+		res.status(500).json({ error: 'Failed to generate unique order number' });
+	}
+});
+
 router.get('/api/order/:id', async (req, res) => {
 	const userId = req.params.id;
 
