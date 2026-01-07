@@ -90,30 +90,42 @@ const removeFromSessionCart = async (
 
 const clearSessionCartByUserId = async (sessionId) => {
   try {
+    console.log(`[clearSessionCartByUserId] Starting for sessionId: ${sessionId}`);
+    
     const userCartResult = await pool.execute(
       "SELECT id FROM session_cart WHERE session_id = ?",
       [sessionId]
     );
 
+    console.log(`[clearSessionCartByUserId] Found ${userCartResult[0].length} cart(s) for sessionId: ${sessionId}`);
+
     if (userCartResult[0].length === 0) {
+      console.log(`[clearSessionCartByUserId] No cart found for sessionId: ${sessionId}`);
       return { success: false, error: "Cart does not exist" };
     }
 
+    const cartId = userCartResult[0][0].id;
+    console.log(`[clearSessionCartByUserId] Cart ID: ${cartId}, deleting products...`);
+
     const [result] = await pool.execute(
       "DELETE FROM session_cart_product WHERE session_cart_id = ?",
-      [userCartResult[0][0].id]
+      [cartId]
     );
 
+    console.log(`[clearSessionCartByUserId] Deleted ${result.affectedRows} product(s) from cart`);
+
     if (result.affectedRows === 0) {
+      console.log(`[clearSessionCartByUserId] No products were deleted (cart might be empty)`);
       return {
         success: false,
         error: "No products in cart or could not clear cart",
       };
     }
 
+    console.log(`[clearSessionCartByUserId] Successfully cleared cart for sessionId: ${sessionId}`);
     return { success: true };
   } catch (error) {
-    console.error("Error clearing cart:", error);
+    console.error(`[clearSessionCartByUserId] Error clearing cart for sessionId ${sessionId}:`, error);
     throw error; // Rethrow the error for the caller to handle
   }
 };
