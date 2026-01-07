@@ -5,6 +5,9 @@ const url = require('url');
 const querystring = require('querystring');
 const orderModel = require('../models/order');
 const { findUserByEmail } = require('../models/user');
+const promoModel = require('../models/promo');
+const cartModel = require('../models/cart');
+const sessionCartModel = require('../models/session_cart');
 const {
 	sendTelegramNotification,
 	formatOrderNotification,
@@ -369,6 +372,8 @@ const handleCallback = async (req, res) => {
 				const emailMatch = orderDescription.match(/Email - ([^,]+)/);
 				const phoneMatch = orderDescription.match(/Телефон - ([^,]+)/);
 				const fioMatch = orderDescription.match(/ФИО - (.+?)(?:,|$)/);
+				const promoMatch = orderDescription.match(/Промокод - ([^,]+)/);
+				const sessionIdMatch = orderDescription.match(/SessionId - ([^,]+)/);
 
 				parsedData.city = cityMatch ? cityMatch[1].trim() : '';
 				parsedData.address = addressMatch ? addressMatch[1].trim() : '';
@@ -380,6 +385,8 @@ const handleCallback = async (req, res) => {
 					: 0;
 				parsedData.email = emailMatch ? emailMatch[1].trim() : '';
 				parsedData.phone = phoneMatch ? phoneMatch[1].trim() : '';
+				parsedData.promoCode = promoMatch ? promoMatch[1].trim() : null;
+				parsedData.sessionId = sessionIdMatch ? sessionIdMatch[1].trim() : null;
 
 				console.log('   Parsed values:');
 				console.log('     city:', parsedData.city || 'NOT FOUND');
@@ -443,6 +450,67 @@ const handleCallback = async (req, res) => {
 			console.log(
 				`✅ Order created successfully with ID: ${orderId} for orderNumber: ${orderNumber}`
 			);
+
+			// Обрабатываем промокод (если был использован)
+			if (parsedData.promoCode && parsedData.userId > 0) {
+				try {
+					console.log(`🎟️  Processing promo code: ${parsedData.promoCode}`);
+					const promoCodeData = await promoModel.findPromoCodeByCode(
+						parsedData.promoCode
+					);
+					if (promoCodeData) {
+						// Проверяем, не использован ли уже промокод
+						const isPromoCodeUsed = await promoModel.isPromoCodeAlreadyUsed(
+							parsedData.userId,
+							promoCodeData.id
+						);
+						if (!isPromoCodeUsed) {
+							// Записываем использование промокода только после успешной оплаты
+							await promoModel.recordPromoCodeUsage(
+								parsedData.userId,
+								promoCodeData.id
+							);
+							console.log(
+								`   ✅ Promo code ${parsedData.promoCode} marked as used`
+							);
+						} else {
+							console.log(
+								`   ⚠️  Promo code ${parsedData.promoCode} already used`
+							);
+						}
+					} else {
+						console.log(`   ⚠️  Promo code ${parsedData.promoCode} not found`);
+					}
+				} catch (error) {
+					console.error('   ❌ Error processing promo code:', error);
+					// Не прерываем выполнение, если промокод не обработался
+				}
+			}
+
+			// Удаляем корзину после успешной оплаты
+			if (parsedData.userId > 0) {
+				// Для авторизованных пользователей - удаляем обычную корзину
+				try {
+					console.log(`🛒 Clearing cart for user ID: ${parsedData.userId}`);
+					await cartModel.clearCartByUserId(parsedData.userId);
+					console.log(`   ✅ Cart cleared successfully`);
+				} catch (error) {
+					console.error('   ❌ Error clearing cart:', error);
+					// Не прерываем выполнение, если корзина не очистилась
+				}
+			} else if (parsedData.sessionId) {
+				// Для неавторизованных пользователей - удаляем сессионную корзину
+				try {
+					console.log(
+						`🛒 Clearing session cart for session ID: ${parsedData.sessionId}`
+					);
+					await sessionCartModel.clearSessionCartByUserId(parsedData.sessionId);
+					console.log(`   ✅ Session cart cleared successfully`);
+				} catch (error) {
+					console.error('   ❌ Error clearing session cart:', error);
+					// Не прерываем выполнение, если корзина не очистилась
+				}
+			}
 
 			// Отправляем уведомление в Telegram (если настроено)
 			const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;

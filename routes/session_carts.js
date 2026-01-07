@@ -4,6 +4,11 @@ const productModel = require("../models/product");
 
 const router = express.Router();
 
+router.get("/api/session-id", async (req, res) => {
+  const sessionId = req.sessionID;
+  res.json({ sessionId });
+});
+
 router.get("/api/session-cart", async (req, res) => { 
   const sessionId = req.sessionID;
   console.log(sessionId, 'get', Date.now())
