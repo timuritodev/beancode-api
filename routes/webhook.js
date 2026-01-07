@@ -452,13 +452,13 @@ const handleCallback = async (req, res) => {
 			);
 
 			// Обрабатываем промокод (если был использован)
-			if (parsedData.promoCode && parsedData.userId > 0) {
+			if (parsedData.promoCode) {
 				try {
 					console.log(`🎟️  Processing promo code: ${parsedData.promoCode}`);
 					const promoCodeData = await promoModel.findPromoCodeByCode(
 						parsedData.promoCode
 					);
-					if (promoCodeData) {
+					if (promoCodeData && parsedData.userId > 0) {
 						// Проверяем, не использован ли уже промокод
 						const isPromoCodeUsed = await promoModel.isPromoCodeAlreadyUsed(
 							parsedData.userId,
@@ -478,8 +478,14 @@ const handleCallback = async (req, res) => {
 								`   ⚠️  Promo code ${parsedData.promoCode} already used`
 							);
 						}
-					} else {
+					} else if (!promoCodeData) {
 						console.log(`   ⚠️  Promo code ${parsedData.promoCode} not found`);
+					}
+
+					// Удаляем примененный промокод из applied_promo_codes после успешной оплаты
+					if (parsedData.userId > 0) {
+						await promoModel.removeAppliedPromoCode(parsedData.userId);
+						console.log(`   ✅ Applied promo code removed from database`);
 					}
 				} catch (error) {
 					console.error('   ❌ Error processing promo code:', error);
