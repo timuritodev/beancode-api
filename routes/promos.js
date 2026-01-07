@@ -33,6 +33,13 @@ router.post('/api/apply-promo-code', async (req, res, next) => {
 	try {
 		const { promo, userId } = req.body;
 
+		// Проверка: промокоды доступны только для авторизованных пользователей
+		if (!userId || userId === 0) {
+			throw new Error(
+				'Для использования промокодов необходимо зарегистрироваться'
+			);
+		}
+
 		// Поиск промокода по коду
 		const promoCode = await promoModel.findPromoCodeByCode(promo);
 		if (!promoCode) {
@@ -57,7 +64,11 @@ router.post('/api/apply-promo-code', async (req, res, next) => {
 			throw new Error('Промокод уже использован текущим пользователем');
 		}
 
-		// Возвращаем скидку, но НЕ записываем использование
+		// Сохраняем примененный промокод в applied_promo_codes
+		// Это удалит предыдущий примененный промокод, если есть
+		await promoModel.applyPromoCode(userId, promoCode.id);
+
+		// Возвращаем скидку
 		// Использование будет записано только после успешной оплаты в webhook
 		res.json({ discount: promoCode.discount, promoCode: promoCode.promo });
 	} catch (error) {
@@ -70,6 +81,63 @@ router.get('/api/promo-codes', async (req, res, next) => {
 	try {
 		const promoCodes = await promoModel.getAllPromoCodes();
 		res.json({ promoCodes });
+	} catch (error) {
+		next(error);
+	}
+});
+
+// Получение примененного промокода
+router.get('/api/applied-promo-code', async (req, res, next) => {
+	try {
+		const { userId } = req.query;
+
+		// Для авторизованных пользователей - из БД
+		if (userId && userId > 0) {
+			const appliedPromo = await promoModel.getAppliedPromoCode(
+				parseInt(userId)
+			);
+			if (appliedPromo) {
+				res.json({
+					promoCode: appliedPromo.promo,
+					discount: appliedPromo.discount,
+				});
+			} else {
+				res.json({ promoCode: null, discount: null });
+			}
+		} else {
+			// Для неавторизованных пользователей - из сессии
+			if (
+				req.session.applied_promo_code &&
+				req.session.applied_promo_discount
+			) {
+				res.json({
+					promoCode: req.session.applied_promo_code,
+					discount: req.session.applied_promo_discount,
+				});
+			} else {
+				res.json({ promoCode: null, discount: null });
+			}
+		}
+	} catch (error) {
+		next(error);
+	}
+});
+
+// Очистка примененного промокода
+router.delete('/api/applied-promo-code', async (req, res, next) => {
+	try {
+		const { userId } = req.query;
+
+		// Для авторизованных пользователей - из БД
+		if (userId && userId > 0) {
+			await promoModel.removeAppliedPromoCode(parseInt(userId));
+			res.json({ message: 'Promo code cleared from database' });
+		} else {
+			// Для неавторизованных пользователей - из сессии
+			req.session.applied_promo_code = null;
+			req.session.applied_promo_discount = null;
+			res.json({ message: 'Promo code cleared from session' });
+		}
 	} catch (error) {
 		next(error);
 	}
