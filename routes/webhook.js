@@ -359,9 +359,6 @@ const handleCallback = async (req, res) => {
 			};
 
 			if (orderDescription) {
-				console.log(
-					`   orderDescription length: ${orderDescription.length} chars`
-				);
 				// Извлекаем данные из orderDescription
 				const cityMatch = orderDescription.match(/Город - ([^,]+)/);
 				const addressMatch = orderDescription.match(/Адрес - ([^,]+)/);
@@ -387,29 +384,6 @@ const handleCallback = async (req, res) => {
 				parsedData.phone = phoneMatch ? phoneMatch[1].trim() : '';
 				parsedData.promoCode = promoMatch ? promoMatch[1].trim() : null;
 				parsedData.sessionId = sessionIdMatch ? sessionIdMatch[1].trim() : null;
-
-				console.log('   SessionId parsing:');
-				console.log(
-					'     sessionIdMatch:',
-					sessionIdMatch ? sessionIdMatch[1] : 'NOT FOUND'
-				);
-				console.log(
-					'     parsedData.sessionId:',
-					parsedData.sessionId || 'NULL'
-				);
-
-				console.log('   Parsed values:');
-				console.log('     city:', parsedData.city || 'NOT FOUND');
-				console.log('     address:', parsedData.address || 'NOT FOUND');
-				console.log('     email:', parsedData.email || 'NOT FOUND');
-				console.log('     phone:', parsedData.phone || 'NOT FOUND');
-				console.log(
-					'     products_info:',
-					parsedData.products_info
-						? `${parsedData.products_info.substring(0, 50)}...`
-						: 'NOT FOUND'
-				);
-				console.log('     product_quantity:', parsedData.product_quantity);
 			} else {
 				console.warn('   ⚠️  No orderDescription provided');
 			}
@@ -504,16 +478,10 @@ const handleCallback = async (req, res) => {
 			}
 
 			// Удаляем корзину после успешной оплаты
-			console.log('🛒 Cart clearing logic:');
-			console.log('   parsedData.userId:', parsedData.userId);
-			console.log('   parsedData.sessionId:', parsedData.sessionId || 'NULL');
-
 			if (parsedData.userId > 0) {
 				// Для авторизованных пользователей - удаляем обычную корзину
 				try {
-					console.log(`🛒 Clearing cart for user ID: ${parsedData.userId}`);
-					const result = await cartModel.clearCartByUserId(parsedData.userId);
-					console.log(`   ✅ Cart cleared successfully, result:`, result);
+					await cartModel.clearCartByUserId(parsedData.userId);
 				} catch (error) {
 					console.error('   ❌ Error clearing cart:', error);
 					// Не прерываем выполнение, если корзина не очистилась
@@ -521,25 +489,11 @@ const handleCallback = async (req, res) => {
 			} else if (parsedData.sessionId) {
 				// Для неавторизованных пользователей - удаляем сессионную корзину
 				try {
-					console.log(
-						`🛒 Clearing session cart for session ID: ${parsedData.sessionId}`
-					);
-					const result = await sessionCartModel.clearSessionCartByUserId(
-						parsedData.sessionId
-					);
-					console.log(
-						`   ✅ Session cart cleared successfully, result:`,
-						result
-					);
+					await sessionCartModel.clearSessionCartByUserId(parsedData.sessionId);
 				} catch (error) {
 					console.error('   ❌ Error clearing session cart:', error);
-					console.error('   Error details:', error.message, error.stack);
 					// Не прерываем выполнение, если корзина не очистилась
 				}
-			} else {
-				console.warn(
-					'   ⚠️  No userId and no sessionId - cart will not be cleared'
-				);
 			}
 
 			// Отправляем уведомление в Telegram (если настроено)

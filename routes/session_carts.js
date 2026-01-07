@@ -11,7 +11,6 @@ router.get("/api/session-id", async (req, res) => {
 
 router.get("/api/session-cart", async (req, res) => { 
   const sessionId = req.sessionID;
-  console.log(sessionId, 'get', Date.now())
   try {
     const cart = await sessionCartModel.getSessionCartByUserId(sessionId);
     if (!cart) {
@@ -64,7 +63,6 @@ router.post("/api/session-cart/add", async (req, res) => {
 router.post("/api/session-cart/remove", async (req, res) => {
   const { productId, product_price, product_weight } = req.body;
   const sessionId = req.sessionID; // Вытаскиваем ID сессии
-  console.log(sessionId, 'delete', Date.now())
   try {
     const result = await sessionCartModel.removeFromSessionCart(
       sessionId,
