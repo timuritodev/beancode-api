@@ -10,6 +10,7 @@ const cors = require('cors');
 // const { login, createUser } = require('./controllers/users');
 const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
+const emailChangeRoutes = require('./routes/emailChange');
 const mailerRoutes = require('./routes/mailers');
 const orderRoutes = require('./routes/orders');
 const orderBackupRoutes = require('./routes/orderBackups');
@@ -111,6 +112,8 @@ app.use('/api/api-countries', apiProxyCountries);
 app.use(productRoutes);
 
 app.use(userRoutes);
+
+app.use(emailChangeRoutes);
 
 app.use(mailerRoutes);
 

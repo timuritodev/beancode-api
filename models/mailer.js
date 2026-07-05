@@ -23,6 +23,27 @@ const sendPasswordResetEmail = async (email, token) => {
   await transporter.sendMail(mailOptions);
 };
 
+const sendEmailChangeCode = async (email, code) => {
+  const transporter = nodemailer.createTransport({
+    host: process.env.HOST,
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.MAIL,
+      pass: process.env.PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.MAIL,
+    to: email,
+    subject: "Подтверждение смены почты",
+    text: `Ваш код для подтверждения новой электронной почты: ${code}\n\nКод действует 1 час. Если вы не запрашивали смену почты, проигнорируйте это письмо.`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 const sendEmailInfo = async ({ email, subject, text }) => {
   const transporter = nodemailer.createTransport({
     host: process.env.HOST,
@@ -68,5 +89,6 @@ const sendOrderDetails = async ({ email, greetings }) => {
 module.exports = {
   sendEmailInfo,
   sendPasswordResetEmail,
+  sendEmailChangeCode,
   sendOrderDetails,
 };

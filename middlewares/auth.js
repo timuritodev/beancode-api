@@ -15,6 +15,11 @@ module.exports = async (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, JWT_SALT);
+    // Билет смены email (scope: 'email_change') не даёт доступа к обычным
+    // эндпоинтам — только к /api/email-change/*.
+    if (payload.scope === 'email_change') {
+      return next(new UnauthorizedError('Invalid authorization token'));
+    }
     req.user = payload;
     next();
   } catch (err) {

@@ -144,6 +144,10 @@ const findUserByIdNotSecure = async (userId) => {
 	return user;
 };
 
+const updateUserEmail = async (userId, newEmail) => {
+	await updateUser(userId, { email: newEmail });
+};
+
 const changePassword = async (userId, oldPassword, newPassword) => {
 	if (oldPassword) {
 		const user = await findUserByIdNotSecure(userId);
@@ -165,5 +169,6 @@ module.exports = {
 	updateUser,
 	getAllUsers,
 	findUserById,
+	updateUserEmail,
 	changePassword,
 };
