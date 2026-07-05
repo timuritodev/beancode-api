@@ -4,6 +4,7 @@ const { createUser, findUserByEmail, findUserByCredentials, getAllUsers, updateU
 const { generateToken, saveResetToken, getResetTokenInfo, removeResetToken } = require("../models/resetToken");
 const { sendPasswordResetEmail } = require("../models/mailer");
 const auth = require('../middlewares/auth');
+const { checkRuEmailDomain, RU_EMAIL_ERROR_MESSAGE } = require('../utils/ruEmailDomain');
 const jwt = require('jsonwebtoken');
 
 const router = express.Router();
@@ -19,6 +20,14 @@ router.get('/api/users', async (req, res, next) => {
 
 router.post('/api/signup', celebrateCreateUser, async (req, res, next) => {
   try {
+
+    // Требование закона: регистрация только на российскую почту (.ru/.su/.рф).
+    if (!checkRuEmailDomain(req.body.email).ok) {
+      return res.status(400).json({
+        error: 'email_not_allowed',
+        message: RU_EMAIL_ERROR_MESSAGE,
+      });
+    }
 
     const existingUser = await findUserByEmail(req.body.email);
     if (existingUser) {
@@ -47,6 +56,23 @@ router.post('/api/signin', celebrateLoginUser, async (req, res, next) => {
     }
 
     const JWT_SALT = req.app.get('config').JWT_SALT;
+
+    // Пароль верный, но почта зарубежная — в аккаунт не пускаем. Выдаём
+    // короткоживущий билет, по которому можно только сменить email на .ru.
+    if (!checkRuEmailDomain(user.email).ok) {
+      const changeEmailToken = jwt.sign(
+        { _id: user.id, scope: 'email_change' },
+        JWT_SALT,
+        { expiresIn: '30m' }
+      );
+      return res.status(403).json({
+        error: 'email_not_allowed',
+        requireEmailChange: true,
+        changeEmailToken,
+        message: RU_EMAIL_ERROR_MESSAGE,
+      });
+    }
+
     const token = jwt.sign({ _id: user.id }, JWT_SALT, { expiresIn: '7d' });
 
     res.json({ token });
@@ -57,8 +83,20 @@ router.post('/api/signin', celebrateLoginUser, async (req, res, next) => {
 
 router.patch('/api/users-me', celebrateEditUser, auth, async (req, res, next) => {
   try {
-    const userId = req.user._id; 
+    const userId = req.user._id;
     const updatedUserData = req.body;
+
+    // Смена email идёт только через подтверждаемый флоу (/api/email-change/*).
+    // Здесь блокируем установку зарубежной почты в обход проверки.
+    if (
+      updatedUserData.email !== undefined &&
+      !checkRuEmailDomain(updatedUserData.email).ok
+    ) {
+      return res.status(400).json({
+        error: 'email_not_allowed',
+        message: RU_EMAIL_ERROR_MESSAGE,
+      });
+    }
 
     await updateUser(userId, updatedUserData);
     const user = await findUserById(userId);
