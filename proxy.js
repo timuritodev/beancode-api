@@ -1,8 +1,35 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const https = require('https');
+const tls = require('tls');
+const fs = require('fs');
+const path = require('path');
+
+// payment.alfabank.ru теперь подписан корнями НУЦ Минцифры (Russian Trusted Root + Sub CA),
+// которых нет во встроенном хранилище Node → TLS падает с SELF_SIGNED_CERT_IN_CHAIN и
+// оплата (register.do) / статус заказа (getOrderStatus.do) перестают работать.
+// Создаём https-агент, который доверяет росс. корням ПЛЮС стандартным (tls.rootCertificates),
+// и подключаем его только к прокси Альфы. Если файла сертификата нет — не роняем сервер,
+// а лишь пишем предупреждение (оплата останется нерабочей, но остальной API живёт).
+let alfaHttpsAgent; // undefined => прокси работает как прежде, без доп. CA
+try {
+	const russianCa = fs.readFileSync(
+		path.join(__dirname, 'russian_trusted_ca.pem'),
+		'utf8'
+	);
+	alfaHttpsAgent = new https.Agent({
+		ca: [...tls.rootCertificates, russianCa],
+	});
+} catch (err) {
+	console.error(
+		'[proxy] Не удалось загрузить russian_trusted_ca.pem, оплата Альфа-Банка может не работать:',
+		err.message
+	);
+}
 
 const proxyOptionsStatus = {
 	target: 'https://payment.alfabank.ru/payment/rest/getOrderStatus.do',
 	changeOrigin: true,
+	agent: alfaHttpsAgent,
 	pathRewrite: {
 		'^/api/api-status': '',
 	},
@@ -16,6 +43,7 @@ const apiProxyStatus = createProxyMiddleware(
 const proxyOptionsPay = {
 	target: 'https://payment.alfabank.ru/payment/rest/register.do',
 	changeOrigin: true,
+	agent: alfaHttpsAgent,
 	pathRewrite: {
 		'^/api/api-pay': '',
 	},
